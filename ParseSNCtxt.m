@@ -282,6 +282,12 @@ end
 % Close file handle
 fclose(fid);
 
+% Log SNC version, if available
+if exist('Event', 'file') == 2 && isfield(data, version) && ...
+        ~isempty(data.version)
+    Event(sprintf('SNC Profiler Version %s', char(data.version{1})));
+end
+
 % Log completion of function
 if exist('Event', 'file') == 2
     Event(sprintf('Successfully parsed file in %0.3f seconds', toc));
