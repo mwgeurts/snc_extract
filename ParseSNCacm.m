@@ -239,7 +239,7 @@ for i = 1:length(names)
                 
                     % Temporarily store cell array
                     C = regexp(tline(length(char(search(j,2)))+2:end), ...
-                        '^([^\t]+)\tTime:\t([^\t]+)', 'tokens');
+                        '([^\s+]+)\s+Time:\s+([^\s+]+)', 'tokens');
                 
                     % Compute and store datenum
                     data.(char(search(j,1))) = datenum(strjoin(C{1}, ' '));
