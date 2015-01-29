@@ -234,7 +234,7 @@ while ~feof(fid)
                 C = regexp(tline(length(char(search(i,2)))+2:end), ...
                     '\t([^\t]+)', 'tokens');
                 
-                % Loop through each result, computing datenum
+                % Loop through each result, computing double
                 for j = 1:length(C)
                     data.(char(search(i,1)))(j) = str2double(C{j});
                 end
