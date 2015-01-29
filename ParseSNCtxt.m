@@ -98,7 +98,7 @@ function data = ParseSNCtxt(path, name)
 % You should have received a copy of the GNU General Public License along 
 % with this program. If not, see http://www.gnu.org/licenses/.
  
-% Log start of image load and start timer
+% Log start of file load and start timer
 if exist('Event', 'file') == 2
     Event(['Parsing SNC ASCII file ', name]);
     tic;
