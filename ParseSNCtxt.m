@@ -127,36 +127,6 @@ if usejava('jvm') && feature('ShowFigureWindows')
     progress = waitbar(0, 'Parsing SNC ASCII file');
 end
 
-% Execute in try/catch statement
-try
-
-% Initialize return variable
-data = struct;
-
-% Retrieve the first line in the file
-tline = fgetl(fid);
-
-% Search for the Filename
-if strcmp(tline(1:8), 'Filename')
-
-    % Calculate number of files loaded
-    n = length(regexp(tline(9:end), '\t[^\t]+'));
-    if exist('Event', 'file') == 2
-        Event(sprintf('ASCII file contains %i profiles', n));
-    end
-
-    % Store filenames
-    data.filenames = regexp(tline(9:end), '\t([^\t]+)', 'tokens');
-else
-    
-    % Otherwise, file may not be in correct format
-    if exist('Event', 'file') == 2
-        Event('File is not in expected format', 'ERROR');
-    else
-        error('File is not in expected format');
-    end
-end
-
 % Declare search variables. This array specifies what lines are extracted
 % from the file, and into what format. The first column is the stored 
 % variable name, the second is the search string, and the third is the data 
@@ -200,6 +170,36 @@ search = {
     'pdiag'   'Detector ID	Positive Diagonal Position(cm)'  'array'
     'ndiag'   'Detector ID	Negative Diagonal Position(cm)'  'array'
 };
+
+% Initialize return variable
+data = struct;
+
+% Execute in try/catch statement
+try
+
+% Retrieve the first line in the file
+tline = fgetl(fid);
+
+% Search for the Filename
+if strcmp(tline(1:8), 'Filename')
+
+    % Calculate number of files loaded
+    n = length(regexp(tline(9:end), '\t[^\t]+'));
+    if exist('Event', 'file') == 2
+        Event(sprintf('ASCII file contains %i profiles', n));
+    end
+
+    % Store filenames
+    data.filenames = regexp(tline(9:end), '\t([^\t]+)', 'tokens');
+else
+    
+    % Otherwise, file may not be in correct format
+    if exist('Event', 'file') == 2
+        Event('File is not in expected format', 'ERROR');
+    else
+        error('File is not in expected format');
+    end
+end
 
 % While the end-of-file has not been reached
 while ~feof(fid)
