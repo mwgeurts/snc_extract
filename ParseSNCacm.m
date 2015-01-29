@@ -28,6 +28,47 @@ function data = ParseSNCacm(path, names)
 %
 % The following structure fields are returned upon successful completion:
 %   filerev: string containing the file revision letter
+%   filename: string containing the original filename
+% 	timestamp: date and time .acm file was saved, as an integer
+%   institution: string containing the institution
+%   dcal: string containing the calibration file name
+%   version: string containing the SNC software version
+%   dorientation: string containing the ArcCHECK orientation
+%   ssd: SSD, in cm
+%   shiftx: phantom X shift, in mm
+%   shifty: phantom Y shift, in mm
+%   shiftz: phantom Z shift, in mm
+%   rotx: phantom X rotation, in deg
+%   roty: phantom Y rotation, in deg
+%   rotz: phantom Z rotation, in deg
+%   dmodel: string containing the detector model
+%   dserial: string containing the detector serial number
+%   dfirmware: string containing the detector firmware revision number
+%   dinterval: collection interval, in ms
+%   dthreshold: background threshold, in percent
+%   dplug: string indicating whether plug was present for acquisition
+%   dplugdose: measured dose (in Gy) to central cavity, if provided
+%   mroom: string containing the treatment room
+%   mtype: string containing the machine type
+%   mmodel: string containing the machine model
+%   mserial: string containing the machine serial number
+%   temp: array of ArcCheck measured temperatures, in C
+%   tilt: measured inclinometer tilt, in deg
+%   rot: measured inclinometer rotation, in deg
+%   dtype: string indicating diode type
+%   dosecal: absolute reference diode dose calibration, in Gy per count
+%   caltemp: temperature during calibration, in C
+%   tics: number of intervals/tics measured
+%   backgrounds: number of background measurements collected
+%   totaltime: total time between start/stop, in msec
+%   beamtime: total time where beam was measured, in msec
+%   z: array of detector spatial Z coordinates, in cm
+%   x: array of detector spatial X coordinates, in cm
+%   y: array of detector spatial Y coordinates, in cm
+%   theta: array of detector spatial cylindrical coordinate, in radians
+%   background: array of detector measured background, in counts/msec
+%   calibration: array of detector relative calibration
+%   data: 2D array of measured detector data
 %
 % Below is an example of how this function is used:
 %
@@ -35,6 +76,9 @@ function data = ParseSNCacm(path, names)
 %   path = '/path/to/files/';
 %   names = {'Head2_G90_to_G270_10deg', 'Head3_G270_to_G90_10deg'};
 %   data = ParseSNCacm(path, names);
+%
+%   % Compute relative beam on fraction for measurement
+%   fraction = data.beamtime / data.totaltime;
 %
 % Copyright (C) 2015 University of Wisconsin Board of Regents
 %
@@ -73,6 +117,7 @@ end
 % type. Currently supported type values are string, float, datenum, csv, 
 % position, vector, and data; see while loop for specifics.
 search = {
+    'filerev'   'File Revision:'    'string'
     'filename'  'Filename:' 'string'
     'timestamp' 'Date:' 'datenum'
     'institution'   'Institution:'  'string'
@@ -280,6 +325,18 @@ for i = 1:length(names)
     
     % Clear temporary files
     clear fid tline j;
+end
+
+% Log SNC file version, if available
+if exist('Event', 'file') == 2 && isfield(data, 'filerev') && ...
+        ~isempty(data.filerev)
+    Event(sprintf('SNC ACM File Revision %s', data.filerev));
+end
+
+% Log SNC application version, if available
+if exist('Event', 'file') == 2 && isfield(data, 'version') && ...
+        ~isempty(data.version)
+    Event(sprintf('SNC Patient Version %s', data.version));
 end
 
 % If detector X and Z data was found
