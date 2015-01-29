@@ -34,7 +34,7 @@ function data = ParseSNCacm(path, names)
 %   dcal: string containing the calibration file name
 %   version: string containing the SNC software version
 %   dorientation: string containing the ArcCHECK orientation
-%   ssd: SSD, in cm
+%   dssd: SSD, in cm
 %   shiftx: phantom X shift, in mm
 %   shifty: phantom Y shift, in mm
 %   shiftz: phantom Z shift, in mm
@@ -74,7 +74,7 @@ function data = ParseSNCacm(path, names)
 %
 %   % Load SNC ArcCHECK data from two files
 %   path = '/path/to/files/';
-%   names = {'Head2_G90_to_G270_10deg', 'Head3_G270_to_G90_10deg'};
+%   names = {'Head2_G90_to_G270_10deg.acm', 'Head3_G270_to_G90_10deg.acm'};
 %   data = ParseSNCacm(path, names);
 %
 %   % Compute relative beam on fraction for measurement
@@ -115,7 +115,7 @@ end
 % from the file, and into what format. The first column is the stored 
 % variable name, the second is the search string, and the third is the data 
 % type. Currently supported type values are string, float, datenum, csv, 
-% position, vector, and data; see while loop for specifics.
+% vector, and data; see while loop for specifics.
 search = {
     'filerev'   'File Revision:'    'string'
     'filename'  'Filename:' 'string'
@@ -124,7 +124,7 @@ search = {
     'dcal'   'Calibration File:' 'string'
     'version'   'Software Version:' 'string'
     'dorientation'   'Orientation:'  'string'
-    'ssd'   'SSD:'  'float'
+    'dssd'   'SSD:'  'float'
     'shiftx'    'Shift X:'  'float'
     'shifty'    'Shift Y:'  'float'
     'shiftz'    'Shift Z:'  'float'

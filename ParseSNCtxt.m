@@ -57,15 +57,15 @@ function data = ParseSNCtxt(path, name)
 %   dinterval: array containing the collection interval, in ms
 %   cax: array of CAX/Normalized dose values, in cGy
 %   tics: array of timer tics, in microseconds
-%   xdata: 2-D array of X axis positions, where column one is the position
-%       (in cm), and columns 2:n+1 are the data for each measurement
-%   ydata: 2-D array of Y axis positions, where column one is the position
-%       (in cm), and columns 2:n+1 are the data for each measurement
-%   pdiag: 2-D array of positive diagonal positions, where column one is 
-%       the position (in cm), and columns 2:n+1 are the data for each 
+%   xdata: 2D array of X axis data, where column one is the position (in 
+%       cm), and columns 2:n+1 are the data for each measurement
+%   ydata: 2D array of Y axis data, where column one is the position (in 
+%       cm), and columns 2:n+1 are the data for each measurement
+%   pdiag: 2D array of positive diagonal data, where column one is the
+%       position (in cm), and columns 2:n+1 are the data for each 
 %       measurement
-%   ndiag: 2-D array of negative diagonal positions, where column one is 
-%       the position (in cm), and columns 2:n+1 are the data for each 
+%   ndiag: 2D array of negative diagonal data, where column one is the
+%       position (in cm), and columns 2:n+1 are the data for each 
 %       measurement
 %
 % Below is an example of how this function is used:
