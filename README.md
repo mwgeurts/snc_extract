@@ -111,7 +111,7 @@ The second input parameter can either contain one or multiple files.  If multipl
 
 If a given field is not found, this function will gracefully ingore it and the returned structure will not contain the field. If the field is found but no contents were specified, the returned field will be an empty cell array.
 
-This function has been tested with SNC Profiler version 3.3.1 and .prm version 25. Note, there are additional fields in SNC .prm files that are not currently imported by this function. Additional fields can be added using the modular search variable, declared within this function. Refer to the documentation within the source code for more information.
+This function has been tested with SNC Profiler version 3.3.1 and .prm version 25. Note, there are additional fields in SNC .prm files that are not currently imported by this function. Additional fields can be added using the modular `search` variable, declared within this function. Refer to the documentation within the source code for more information.
 
 The following variables are required for proper execution:
 
@@ -180,7 +180,7 @@ data = ParseSNCprm(path, names);
 
 `ParseSNCtxt()` extracts data from a SNC Profiler ASCII File Export text file and returns the data returned as a MATLAB structure. See below for a full list of the structure fields returned.  This function will display a progress bar while it loads (unless MATLAB was executed with the `-nodisplay`, `-nodesktop`, or `-noFigureWindows` flags). Where indicated, returned arrays have a length equal to the number of profiles in the text file.  If a given field is not found, this function will gracefully ingore it and the returned structure will not contain the field. If the field is found but no contents were specified, the returned field will be an empty cell array.
 
-This function has been tested with SNC Profiler version 3.3.1. Note, there are additional fields in SNC ASCII text files that are not currently imported by this function.  Additional fields can be added using the modular search variable, declared within this function. Refer to the documentation within the source code for more information.
+This function has been tested with SNC Profiler version 3.3.1. Note, there are additional fields in SNC ASCII text files that are not currently imported by this function.  Additional fields can be added using the modular `search` variable, declared within this function. Refer to the documentation within the source code for more information.
 
 The following variables are required for proper execution:
 
