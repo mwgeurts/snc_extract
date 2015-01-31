@@ -160,7 +160,7 @@ The following structure fields are returned upon successful completion:
 * us2: array (dist, mv) of ultrasonic point 2 calibration
 * totaltime: total time between start/stop, in msec
 * pulsestats: array of pulse statistics (idle, mmt, idle dur, mmt dur)
-* numdetectors: array of number of detectors (X, Y, PD, ND, Ref, Z)
+* num: array of number of detectors (X, Y, PD, ND, Ref, Z)
 * detspacing: detector spacing, in cm
 * background: array of detector measured background, in counts/timetic
 * calibration: array of detector relative calibration

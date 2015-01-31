@@ -67,7 +67,7 @@ function data = ParseSNCprm(path, names)
 %   us2: array (dist, mv) of ultrasonic point 2 calibration
 %   totaltime: total time between start/stop, in msec
 %   pulsestats: array of pulse statistics (idle, mmt, idle dur, mmt dur)
-%   numdetectors: array of number of detectors (X, Y, PD, ND, Ref, Z)
+%   num: array of number of detectors (X, Y, PD, ND, Ref, Z)
 %   detspacing: detector spacing, in cm
 %   background: array of detector measured background, in counts/timetic
 %   calibration: array of detector relative calibration
@@ -156,7 +156,7 @@ search = {
     'us2'   'Point 2(dist,mv):' 'vector'
     'totaltime' 'Total Time:'   'float'
     'pulsestats'    'PulseCountsDuringIdle:'    'vector'
-    'numdetectors'  'Detectors:'    'vector'
+    'num'  'Detectors:'    'vector'
     'detspacing'    'Detector Spacing:' 'float'
     'background'    'BIAS1' 'vector'
     'calibration'   'Calibration'   'vector'
