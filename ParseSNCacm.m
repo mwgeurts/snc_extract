@@ -208,10 +208,12 @@ for i = 1:length(names)
         % Loop through each search variable
         for j = 1:size(search, 1)
             
-            % If search variable is found
+            % If search variable is found and does not already exist in
+            % return structure
             if length(tline) >= length(char(search(j,2)))+1 && ...
                     strcmp(sprintf('%s\t', char(search(j,2))), ...
-                    tline(1:length(char(search(j,2)))+1))
+                    tline(1:length(char(search(j,2)))+1)) && ...
+                    ~isfield(data, char(search(j,1)))
                 
                 % Update waitbar
                 if exist('progress', 'var') && ishandle(progress)
@@ -259,7 +261,7 @@ for i = 1:length(names)
                 elseif strcmp(search(j,3), 'vector')
                     
                     % Temporarily store cell array
-                    C = str2double(strsplit(tline, '\t'));
+                    C = str2double(strsplit(tline));
                     
                     % Store values, removing NaNs
                     data.(char(search(j,1))) = single(C(~isnan(C)));
@@ -277,7 +279,7 @@ for i = 1:length(names)
                     end
                     
                     % Determine number of data elements
-                    n = length(strsplit(tline, '\t')) - 1;
+                    n = length(strsplit(tline)) - 1;
                     
                     % Move file pointer back to beginning of line
                     if fseek(fid, -length(tline), 0) == 0
