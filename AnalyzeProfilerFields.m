@@ -35,17 +35,17 @@ function varargout = AnalyzeProfilerFields(varargin)
 % varargout{2} upon successful completion:
 %   xdata: 2D array of background/ignore flag/calibration corrected X axis 
 %       data, where column one is the position (in cm), and columns 2:n+1 
-%       are the data for each frame/profile
+%       are the dose for each frame/profile (in Gy)
 %   ydata: 2D array of background/ignore flag/calibration corrected Y axis 
 %       data, where column one is the position (in cm), and columns 2:n+1 
-%       are the data for each frame/profile
+%       are the dose for each frame/profile (in Gy)
 %   pdiag: 2D array of background/ignore flag/calibration corrected 
 %       positive diagonal axis data, where column one is the position (in 
-%       cm), and columns 2:n+1 are the data for each frame/profile
+%       cm), and columns 2:n+1 are the dose for each frame/profile (in Gy)
 %   ndiag: 2D array of background/ignore flag/calibration corrected 
 %       negative diagonal axis data, where column one is the position (in 
-%       cm), and columns 2:n+1 are the data for each frame/profile
-%   tdata (optional): 2D array of time-dependent central channel data, 
+%       cm), and columns 2:n+1 are the dose for each frame/profile (in Gy)
+%   tdata (optional): 2D array of time-dependent detector channel data, 
 %       where column one is the absolute time and column two is the 
 %       differential central channel response. If time dependent data is
 %       not available (i.e. ParseSNCtxt data), this field is not returned.
@@ -139,7 +139,7 @@ function varargout = AnalyzeProfilerFields(varargin)
 fields = {'xdata', 'ydata', 'pdiag', 'ndiag'};
 
 % Check the number of inputs
-if nargin == 0 || nargin > 2
+if nargin == 0 || nargin > 3
     if exist('Event', 'file') == 2
         Event('Incorrect number of arguments passed to function', 'ERROR');
     else
@@ -155,6 +155,14 @@ if nargout > 1 && nargin == 1
     else
         error(['Function cannot return two output arguments with only', ...
             ' one input argument']);
+    end
+    
+% Otherwise, check number of output arguments
+elseif nargout == 0 || nargout > 2
+    if exist('Event', 'file') == 2
+        Event('Incorrect number of outputs arguments', 'ERROR');
+    else
+        error('Incorrect number of outputs arguments');
     end
 end
 
@@ -203,6 +211,12 @@ end
 % Execute in try/catch statement
 try
 
+% Log start of analysis and start timer
+if exist('Event', 'file') == 2
+    Event('Analyzing SNC Profiler data');
+    tic;
+end
+    
 %% Extract field
 % If file type is PRM, split into individual fields
 if strcmp(type, 'prm')
@@ -264,18 +278,22 @@ if strcmp(type, 'prm')
                 % Loop through the data fields
                 for k = 1:min(length(fields), length(varargin{1}.num))
                 
-                    % Store field data, correcting for background/cal,
+                    % Store field data, correcting for background/cal/dose,
                     % skipping the first 5 data columns
                     varargout{1}.(fields{k})(c+1, 1:varargin{1}.num(k)) = ...
-                        ((varargin{1}.data(j, 5 + sum(varargin{1}.num(1:k-1)) + ...
+                        ((varargin{1}.data(j, 5 + ...
+                        sum(varargin{1}.num(1:k-1)) + ...
                         (1:varargin{1}.num(k))) - varargin{1}.data(i, 5 + ...
-                        sum(varargin{1}.num(1:k-1)) + (1:varargin{1}.num(k)))) - ...
-                        (varargin{1}.data(j, 3) - varargin{1}.data(i, 3)) * ...
-                        varargin{1}.background((1 + varargin{1}.num(2)):...
-                        (varargin{1}.num(2) + varargin{1}.num(1)))) .* ...
+                        sum(varargin{1}.num(1:k-1)) + ...
+                        (1:varargin{1}.num(k)))) - ((varargin{1}.data(j, 3) ...
+                        - varargin{1}.data(i, 3)) * varargin{1}.background(...
+                        (2 + sum(varargin{1}.num(1:k-1))):(1 + ...
+                        varargin{1}.num(k) + ...
+                        sum(varargin{1}.num(1:k-1)))))) .* ...
                         varargin{1}.calibration((1 + ...
                         sum(varargin{1}.num(1:k-1))):(varargin{1}.num(k) + ...
-                        sum(varargin{1}.num(1:k-1))));
+                        sum(varargin{1}.num(1:k-1)))) * ...
+                        varargin{1}.dosecal / 1000;
                 end
                 
                 % Jump forward
@@ -331,6 +349,29 @@ if strcmp(type, 'prm')
     % Clear temporary variables
     clear i j k c;
     
+    % Load time-dependent reference detector profile
+    if exist('Event', 'file') == 2
+        Event('Loading center detector timing profile');
+    end
+    
+    % Store time values in column 1 using collection interval (in msec)
+    varargout{1}.tdata(1,:) = (1:size(varargin{1}.data, 1)) * ...
+        varargin{1}.dinterval;
+    
+    % Store cumulative raw central detector response (central Y detector)
+    varargout{1}.tdata(2,:) = varargin{1}.data(:, 5 + ...
+        varargin{1}.num(1) + ceil(varargin{1}.num(2)/2));
+    
+    % Convert signal from integral to differential using circshift
+    if exist('Event', 'file') == 2
+        Event('Converting cumulative timing profile to differential');
+    end
+    varargout{1}.tdata(2,:) = varargout{1}.tdata(2,:) - ...
+        circshift(varargout{1}.tdata(2,:),1,2);
+    
+    % Fix first value (artifact of using circshift)
+    varargout{1}.tdata(2,1) = varargout{1}.tdata(2,2);
+    
 % If file type is ASCII, just copy from input data
 elseif strcmp(type, 'ascii')
     
@@ -342,9 +383,11 @@ elseif strcmp(type, 'ascii')
     % Loop through the data fields
     for k = 1:length(fields)
     
-        % Store data if present
+        % Store data if present, converting from normalized dose to dose
         if isfield(varargin, fields{k})
-            varargout{1}.(fields{k}) = varargin{1}.(fields{k});
+            varargout{1}.(fields{k}) = varargin{1}.(fields{k})/100 .* ...
+                repmat([1 varargin{1}.cax], ...
+                size(varargin{1}.(fields{k}), 2)) / 100;
         end
     end
     
@@ -353,7 +396,7 @@ elseif strcmp(type, 'ascii')
 end
     
 %% Set reference profiles (if provided)  
-if nargin == 2
+if nargin >= 2
 
     % Log event
     if exist('Event', 'file') == 2
@@ -361,8 +404,8 @@ if nargin == 2
     end
     
     % Initialize 3D correlation return array
-    varargout{1}.corr = zeros(size(varargout{1}.xdata, 1) - 1, ...
-        size(varargin{2}.xdata, 1) - 1, length(fields));
+    varargout{1}.corr = zeros(length(fields), size(varargout{1}.xdata, 1) ...
+        - 1, size(varargin{2}.xdata, 1) - 1);
  
     % Loop through each field
     for k = 1:length(fields)
@@ -380,34 +423,38 @@ if nargin == 2
                 varargout{1}.(fields{k})(1, :), 'spline', 'extrap');
         end
         
-        % Compute correlation coefficient (note corr requires n x p1 and n
-        % x p2 arrays, so profiles must be transposed when passed)
+        % Compute correlation coefficient of normalized profiles (note 
+        % corr requires n x p1 and n x p2 arrays, so profiles must be 
+        % transposed when passed)
         varargout{1}.corr(k, :, :) = corr(...
-            varargout{1}.(fields{k})(2:end, :)', ref(2:end, :)', 'type', ...
-            'Pearson')';
+            (varargout{1}.(fields{k})(2:end, :)./...
+            repmat(max(varargout{1}.(fields{k})(2:end, :), [], 2), ...
+            [1, size(varargout{1}.(fields{k}), 2)]))', (ref(2:end, :)./...
+            repmat(max(ref(2:end, :), [], 2), [1, size(ref, 2)]))', 'type', ...
+            'Pearson');
     end
         
     % Clear temporary variables 
     clear i k ref;
     
     % Determine which reference profile has the highest correlation
-    [~, varargout{1}.ref] = max(sum(varargout{1}.corr, 1));    
+    [~, varargout{1}.ref] = max(squeeze(sum(varargout{1}.corr, 1)), [], 2);    
 
     % Log event
     if exist('Event', 'file') == 2
         Event(sprintf(['Reference profile indices = [', repmat('%s,', ...
-            [1 length(varargout.ref)]), ']'], varargout{1}.ref));
+            [1 length(varargout{1}.ref)]), ']'], varargout{1}.ref));
     end
     
     % Set varargout{2} profile data (xdata, ydata, pdiag, ndiag)
-    if nargout >= 2
+    if nargout == 2
         
         % Loop through each field
         for k = 1:length(fields)
             
             % Store reference xdata based on highest correlation
             varargout{2}.(fields{k}) = ...
-                varargin{2}.(fields{k})([1, varargout{1}.ref]);
+                varargin{2}.(fields{k})([1, 1 + squeeze(varargout{1}.ref)'], :);
         end
         
         % Clear temporary variables 
@@ -431,7 +478,7 @@ for i = 1:nargout
 end
 
 % Clear temporary variables 
-clear k;
+clear i k;
         
 %% Compute flatness and symmetry
 for i = 1:nargout
@@ -448,6 +495,12 @@ if nargin == 2
     
 end
     
+% Log completion
+if exist('Event', 'file') == 2
+    Event(sprintf(['SNC Profiler analysis successfully completed in ', ...
+      '%0.3f seconds'], toc));
+end
+
 % Catch errors, log, and rethrow
 catch err
     if exist('Event', 'file') == 2

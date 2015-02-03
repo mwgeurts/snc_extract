@@ -179,7 +179,7 @@ for i = 1:length(names)
     % Verify file handle is valid
     if fid >= 3
         if exist('Event', 'file') == 2
-            Event('Read handle successfully established');
+            Event(['Read handle successful for ', names{i}]);
         end
     else
         if exist('Event', 'file') == 2
@@ -217,7 +217,8 @@ for i = 1:length(names)
             if length(tline) >= length(char(search(j,2)))+1 && ...
                     strcmp(sprintf('%s\t', char(search(j,2))), ...
                     tline(1:length(char(search(j,2)))+1)) && ...
-                    ~isfield(data, char(search(j,1)))
+                    (~isfield(data, char(search(j,1))) || ...
+                    strcmp(search(j,3), 'data'))
                 
                 % Update waitbar
                 if exist('progress', 'var') && ishandle(progress)
@@ -268,9 +269,15 @@ for i = 1:length(names)
                 % Otherwise, if returning a data array
                 elseif strcmp(search(j,3), 'data')
                     
-                    % If return structure field does not already exist,
-                    % initialize it (for concatentation)
+                    % If return structure field does not already exist
                     if ~isfield(data, char(search(j,1)))
+                        
+                        % Log event
+                        if exist('Event', 'file') == 2
+                            Event('Initializing return data array');
+                        end
+                            
+                        % Initialize it
                         data.(char(search(j,1))) = [];
                     end
                     
@@ -280,6 +287,11 @@ for i = 1:length(names)
                     % Move file pointer back to beginning of line
                     if fseek(fid, -length(tline), 0) == 0
                     
+                        % Log event
+                        if exist('Event', 'file') == 2
+                            Event('Concatenating data onto return array');
+                        end
+                        
                         % Textscan remaining lines in file, storing results
                         % to temporary array (given number of elements
                         % determined above)
