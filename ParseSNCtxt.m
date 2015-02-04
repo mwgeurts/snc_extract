@@ -262,7 +262,7 @@ while ~feof(fid)
                 
                 % Scan subsequent lines in file for array data
                 data.(char(search(i,1))) = ...
-                    textscan(fid, repmat('%f ', 1, n+1));
+                    cell2mat(textscan(fid, repmat('%f ', 1, n+1)));
                 
             % Otherwise, return an error
             else
