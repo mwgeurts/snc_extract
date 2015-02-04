@@ -4,7 +4,11 @@ function data = LoadProfilerDICOMReference(varargin)
 % SNC Profiler axes (X, Y, and positive/negative diagonals).  The profiles
 % are returned as a structure that is compatible with AnalyzeProfilerFields
 % (refer to the documentation in the README for more information on how
-% reference data can be used by this function).
+% reference data can be used by this function).  It is also possible to
+% include an angle as the first argument to extract the profiles along
+% rotated coordinates. For example, including 90 will extract reference
+% profiles rotated by 90 degrees (for cases where the Profiler is rotated
+% relative to IEC coordinates).
 %
 % This function uses MLATAB's dicominfo and dicomread functions to extract
 % the file contents of input file.  This function assumes that the Profiler
@@ -16,6 +20,8 @@ function data = LoadProfilerDICOMReference(varargin)
 % frame of reference of the first set provided. 
 %
 % The following variables are required for proper execution:
+%   varargin{1} (optional): number indicating the number of degrees to
+%       rotate the reference profiles
 %   varargin: cell array of strings containing the full path and file name 
 %       of each DICOM RT Dose file to be loaded.
 %
@@ -36,6 +42,11 @@ function data = LoadProfilerDICOMReference(varargin)
 %       'AP_27P3X27P3_PlaneDose_Vertical_Isocenter.dcm', ...
 %       'AP_10P5X10P5_PlaneDose_Vertical_Isocenter.dcm');
 %
+%   % Load two DICOM reference profiles, this time rotating by 90 degrees
+%   refdata = LoadProfilerDICOMReference(90, ...
+%       'AP_27P3X27P3_PlaneDose_Vertical_Isocenter.dcm', ...
+%       'AP_10P5X10P5_PlaneDose_Vertical_Isocenter.dcm');
+%
 % Copyright (C) 2015 University of Wisconsin Board of Regents
 %
 % This program is free software: you can redistribute it and/or modify it 
@@ -53,6 +64,18 @@ function data = LoadProfilerDICOMReference(varargin)
 
 % Execute in try/catch statement
 try
+   
+% Store nargin as variable
+n = nargin;
+    
+% Check the number of inputs
+if n == 0
+    if exist('Event', 'file') == 2
+        Event('At least one argument must be passed to function', 'ERROR');
+    else
+        error('At least one argument must be passed to function');
+    end
+end
     
 % Log start
 if exist('Event', 'file') == 2
@@ -60,11 +83,29 @@ if exist('Event', 'file') == 2
     tic;
 end
 
+% Check for rotation
+if isnumeric(varargin{1})
+    
+    % Set rotation variable and index adjustor
+    rot = -varargin{1};
+    n = 1;
+    
+    % Log event
+    if exist('Event', 'file') == 2
+        Event(sprintf('Reference profiles rotated by %g deg', rot));
+    end
+    
+% Otherwise do not rotate profiles
+else
+    rot = 0;
+    n = 0;
+end
+
 % Initialize return variable
 data = struct;
     
 % Loop through input arguments
-for i = 1:nargin
+for i = 1+n:nargin
     
     % Log file being loaded
     if exist('Event', 'file') == 2
@@ -94,7 +135,7 @@ for i = 1:nargin
         data.xdata(1,:) = sort(meshX(1,:));
         data.ydata(1,:) = sort(meshY(:,1));
         
-        % Store diagonal positions as the lerger of the x/y dimensions
+        % Store diagonal positions as the larger of the x/y dimensions
         if size(data.xdata, 2) < size(data.ydata, 2)
             data.pdiag(1,:) = data.ydata(1,:) * sqrt(2);
             data.ndiag(1,:) = data.ydata(1,:) * sqrt(2);
@@ -111,21 +152,21 @@ for i = 1:nargin
     end
     
     % Interpolate each axis and store reference profile
-    data.xdata(i+1,:) = interp2(meshX, meshY, image, data.xdata(1,:), ...
-        zeros(1, size(data.xdata, 2)), '*linear', 0);
-    data.ydata(i+1,:) = interp2(meshX, meshY, image, zeros(1, ...
-        size(data.ydata, 2)), data.ydata(1,:), '*linear', 0);
-    data.pdiag(i+1,:) = interp2(meshX, meshY, image, data.pdiag(1,:) ...
-        * sqrt(2)/2, data.pdiag(1,:) * sqrt(2)/2, '*linear', 0);
-    data.ndiag(i+1,:) = interp2(meshX, meshY, image, data.ndiag(1,:) ...
-        * sqrt(2)/2, -data.ndiag(1,:) * sqrt(2)/2, '*linear', 0);
+    data.xdata(i-n+1,:) = interp2(meshX, meshY, image, data.xdata(1,:) * ...
+        cosd(rot), data.xdata(1,:) * sind(rot), '*linear', 0);
+    data.ydata(i-n+1,:) = interp2(meshX, meshY, image, data.ydata(1,:) * ...
+        cosd(rot + 90), data.ydata(1,:) * sind(rot + 90), '*linear', 0);
+    data.pdiag(i-n+1,:) = interp2(meshX, meshY, image, data.pdiag(1,:) ...
+        * cosd(rot + 45), data.pdiag(1,:) * sind(rot + 45), '*linear', 0);
+    data.ndiag(i-n+1,:) = interp2(meshX, meshY, image, data.ndiag(1,:) ...
+        * cosd(rot - 45), data.ndiag(1,:) * sind(rot - 45), '*linear', 0);
     
     % Clear temporary variables
     clear info width start image meshX meshY;
 end
 
 % Clear temporary variables
-clear i;
+clear i n rot;
 
 % Log completion
 if exist('Event', 'file') == 2
