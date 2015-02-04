@@ -24,6 +24,9 @@ function varargout = AnalyzeProfilerFields(varargin)
 % interpolation may be required.  In these instances, spline-based 
 % interpolation is used.
 %
+% This function has been tested with SNC Profiler version 3.3.1 and .prm 
+% version 25. 
+%
 % The following variables are required for proper execution:
 %   varargin{1}: structure returned either by ParseSNCprm or ParseSNCtxt 
 %       (see the documentation for these functions for more information on 
@@ -218,7 +221,7 @@ elseif nargout == 0 || nargout > 2
     end
 end
 
-% If first argument contains the field 'data'
+% If first argument contains the correct fields
 if isstruct(varargin{1}) && isfield(varargin{1}, 'data') && ...
         isfield(varargin{1}, 'num') && ...
         isfield(varargin{1}, 'detspacing') && ...
