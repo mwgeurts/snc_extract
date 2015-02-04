@@ -80,7 +80,7 @@ function varargout = AnalyzeProfilerFields(varargin)
 %   nsym: vector of areal symmetry for negative diagonal profiles
 %
 % The following additional structure fields are returned in varargout{1} if 
-% reference data was provided:
+% reference data was provided and nargout == 2:
 %   ref (optional): vector indicating which reference profile was selected
 %   corr (optional): 4 x n x m 3D array containing the correlation 
 %       coefficient between each of n measured profiles, m reference 
@@ -110,8 +110,8 @@ function varargout = AnalyzeProfilerFields(varargin)
 %
 %   % Load SNC Profiler data from one file
 %   path = '/path/to/files/';
-%   names = 'Head1_G90_27p3.prm';
-%   data = ParseSNCprm(path, names);
+%   name = 'Head1_27p3.prm';
+%   data = ParseSNCprm(path, name);
 %
 %   % Compute statistics on Profiler data (without normalization)
 %   results = AnalyzeProfilerFields(data, 'none');
@@ -126,7 +126,49 @@ function varargout = AnalyzeProfilerFields(varargin)
 %   refdata.local = 0;  % perform global analysis
 %
 %   % Compute statistics again, this time comparing to reference criteria
-%   [results, refresults] = AnalyzeProfilerFields(data, refdata);
+%   % and normalizing profiles to Profiler center
+%   [results, refresults] = AnalyzeProfilerFields(data, refdata, 'center');
+%
+%   % Plot X axis Gamma index
+%   figure;
+%   subplot(2,2,1);
+%   hold on;
+%   plot(results.xdata(1,:), results.xdata(2,:));
+%   plot(refresults.xdata(1,:), refresults.xdata(2,:));
+%   plot(results.xgamma(1,:), results.xgamma(2,:));
+%   hold off;
+%   title(sprintf('xgamma (%0.1f%%/%0.1f cm)', refdata.abs, refdata.dta));
+%   xlabel('x axis (cm)');
+% 
+%   % Plot Y axis Gamma index
+%   subplot(2,2,2);
+%   hold on;
+%   plot(results.ydata(1,:), results.ydata(2,:));
+%   plot(refresults.ydata(1,:), refresults.ydata(2,:));
+%   plot(results.ygamma(1,:), results.ygamma(2,:));
+%   hold off;
+%   title(sprintf('ygamma (%0.1f%%/%0.1f cm)', refdata.abs, refdata.dta));
+%   xlabel('y axis (cm)');
+% 
+%   % Plot positive diagonal axis Gamma index
+%   subplot(2,2,3);
+%   hold on;
+%   plot(results.pdiag(1,:), results.pdiag(2,:));
+%   plot(refresults.pdiag(1,:), refresults.pdiag(2,:));
+%   plot(results.pgamma(1,:), results.pgamma(2,:));
+%   hold off;
+%   title(sprintf('pgamma (%0.1f%%/%0.1f cm)', refdata.abs, refdata.dta));
+%   xlabel('positive diagonal (cm)');
+% 
+%   % Plot negative diagonal axis Gamma index
+%   subplot(2,2,4);
+%   hold on;
+%   plot(results.ndiag(1,:), results.ndiag(2,:));
+%   plot(refresults.ndiag(1,:), refresults.ndiag(2,:));
+%   plot(results.ngamma(1,:), results.ngamma(2,:));
+%   hold off;
+%   title(sprintf('ngamma (%0.1f%%/%0.1f cm)', refdata.abs, refdata.dta));
+%   xlabel('negative diagonal (cm)');
 %
 % Copyright (C) 2015 University of Wisconsin Board of Regents
 %
@@ -236,23 +278,6 @@ else
     % Default to none
     norm = 'none'; 
 end
-
-% Verify normalization value
-if strcmp(norm, 'none') || strcmp(norm, 'center') || strcmp(norm, 'max')
-   
-    % Log value
-    if exist('Event', 'file') == 2
-        Event(['Normalization value set to ', norm]);
-    end
-    
-% Otherwise, throw an error    
-else    
-    if exist('Event', 'file') == 2
-        Event('Normalization input parameter is invalid', 'ERROR');
-    else
-        error('Normalization input parameter is invalid');
-    end
-end
     
 % Add gamma submodule to search path
 addpath('./gamma');
@@ -278,16 +303,33 @@ try
 % Log start of analysis and start timer
 if exist('Event', 'file') == 2
     Event('Analyzing SNC Profiler data');
-    tic;
-end
+    timer = tic;
+end 
+
+% Verify normalization value
+if strcmp(norm, 'none') || strcmp(norm, 'center') || strcmp(norm, 'max')
+   
+    % Log value
+    if exist('Event', 'file') == 2
+        Event(['Normalization value set to ', norm]);
+    end
     
+% Otherwise, throw an error    
+else    
+    if exist('Event', 'file') == 2
+        Event('Normalization input parameter is invalid', 'ERROR');
+    else
+        error('Normalization input parameter is invalid');
+    end
+end
+
 %% Extract field
 % If file type is PRM, split into individual fields
 if strcmp(type, 'prm')
     
     % Log event
     if exist('Event', 'file') == 2
-        Event('Extracting frames from time-dependent data');
+        Event('Initializing detector spatial positions');
     end
       
     % Initialize X axis positions (note that two diodes are missing)
@@ -311,6 +353,11 @@ if strcmp(type, 'prm')
         ([1:(varargin{1}.num(4) - 1) / 2, (varargin{1}.num(4) + 3) / 2, ...
         (varargin{1}.num(4) + 7) / 2:varargin{1}.num(4) + 2] - ...
         (varargin{1}.num(4) + 3) / 2) * varargin{1}.detspacing * sqrt(2);
+    
+    % Log event
+    if exist('Event', 'file') == 2
+        Event('Extracting frames from time-dependent data');
+    end
     
     % Initialize counters
     c = 0;
@@ -441,13 +488,22 @@ elseif strcmp(type, 'ascii')
     end
     
     % Loop through the data fields
-    for k = 1:min(length(fields), length(varargin{1}.num))
+    for k = 1:length(fields)
     
-        % Store data if present, converting from normalized dose to dose
-        if isfield(varargin, fields{k})
-            varargout{1}.(fields{k}) = varargin{1}.(fields{k})/100 .* ...
-                repmat([1 varargin{1}.cax], ...
-                size(varargin{1}.(fields{k}), 2)) / 100;
+        % If the data exists
+        if isfield(varargin{1}, fields{k})
+            
+            % Increase num variable
+            varargin{1}.num(k) = size(varargin{1}.(fields{k}), 1);
+            
+            % Store data, converting from normalized dose to dose (Gy)
+            varargout{1}.(fields{k}) = varargin{1}.(fields{k})'/100 .* ...
+                repmat([100;varargin{1}.cax'/100], ...
+                [1 size(varargin{1}.(fields{k}), 1)]);
+        else
+            
+            % Otherwise stop loading, as not all profile data was found
+            break;
         end
     end
     
@@ -585,21 +641,46 @@ for i = 1:nargout
             % Find highest lower index just below half maximum
             lI = find(varargout{i}.(fields{k})(j, ...
                 1:I(j)) < C(j)/2, 1, 'last');
-            
-            % Interpolate to find lower half-maximum value
-            varargout{i}.([fields{k}(1), 'edges'])(j-1, 1) = ...
-                interp1(varargout{i}.(fields{k})(j, lI-1:lI+2), ...
-                varargout{i}.(fields{k})(1, lI-1:lI+2), C(j)/2, 'spline');
-            
+
             % Find lowest upper index just above half maximum
             uI = find(varargout{i}.(fields{k})(j, ...
                 I(j):end) < C(j)/2, 1, 'first');
             
-            % Interpolate to find upper half-maximum value
-            varargout{i}.([fields{k}(1), 'edges'])(j-1, 2) = ...
-                interp1(varargout{i}.(fields{k})(j, I(j)+uI-3:I(j)+uI), ...
-                varargout{i}.(fields{k})(1, I(j)+uI-3:I(j)+uI), C(j)/2, ...
-                'spline');
+            % Verify edges were found
+            if isempty(uI) || isempty(lI)
+                
+                % Log event
+                if exist('Event', 'file') == 2
+                    Event(sprintf(['Field edges were not found for ', ...
+                        'profile %i %s'], j-1, fields{k}), 'WARN');
+                end
+                
+            % Otherwise, verify edges are sufficiently far from array edges
+            elseif lI-1 < 1 || lI+2 > size(varargout{i}.(fields{k}), 2) || ...
+                    I(j)+uI-3 < 1 || I(j)+uI > ...
+                    size(varargout{i}.(fields{k}), 2)
+                
+                % Log event
+                if exist('Event', 'file') == 2
+                    Event(sprintf(['Field edges are too close to detector', ...
+                        ' edge to compute for profile %i %s'], j-1, ...
+                        fields{k}), 'WARN');
+                end
+            
+            % Otherwise, continue edge calculation
+            else
+                % Interpolate to find lower half-maximum value
+                varargout{i}.([fields{k}(1), 'edges'])(j-1, 1) = ...
+                    interp1(varargout{i}.(fields{k})(j, lI-1:lI+2), ...
+                    varargout{i}.(fields{k})(1, lI-1:lI+2), C(j)/2, ...
+                    'spline');
+
+                % Interpolate to find upper half-maximum value
+                varargout{i}.([fields{k}(1), 'edges'])(j-1, 2) = ...
+                    interp1(varargout{i}.(fields{k})(j, I(j)+uI-3:I(j)+uI), ...
+                    varargout{i}.(fields{k})(1, I(j)+uI-3:I(j)+uI), C(j)/2, ...
+                    'spline');
+            end
             
             % Clear temporary variables
             clear lI uI;
@@ -657,49 +738,62 @@ for i = 1:nargout
             uI = find(varargout{i}.(fields{k})(j, ...
                 I(j):end) < C(j)/2, 1, 'first');
             
-            % Find maximum and minimum values within threshold region
-            dmax = max(varargout{i}.(fields{k})(j, ceil(lI + (uI - lI) * ...
-                (1 - t) / 2):floor(uI - (uI - lI) * (1 - t) / 2)));
-            dmin = min(varargout{i}.(fields{k})(j, ceil(lI + (uI - lI) * ...
-                (1 - t) / 2):floor(uI - (uI - lI) * (1 - t) / 2)));
+            % Verify edges were found
+            if isempty(uI) || isempty(lI)
             
-            % Store flatness
-            varargout{i}.([fields{k}(1), 'flat'])(j-1) = ...
-                (dmax - dmin) / (dmax + dmin);
+                % Log event
+                if exist('Event', 'file') == 2
+                    Event(sprintf(['Flatness and symmetry not computed for', ...
+                        ' profile %i %s'], j-1, fields{k}), 'WARN');
+                end
             
-            % Compute lower area
-            lA = interp1(varargout{i}.(fields{k})(1,:), ...
-                varargout{i}.(fields{k})(j,:), varargout{i}.([fields{k}(1), ...
-                'edges'])(j-1, 1) + (varargout{i}.([fields{k}(1), ...
-                'edges'])(j-1, 2) - varargout{i}.([fields{k}(1), ...
-                'edges'])(j-1, 1)) * (1 - t) / 2:...
-                ((varargout{i}.([fields{k}(1), 'edges'])(j-1, 1) + ...
-                varargout{i}.([fields{k}(1), 'edges'])(j-1, 2)) / 2 - ...
-                (varargout{i}.([fields{k}(1), 'edges'])(j-1, 1) + ...
-                (varargout{i}.([fields{k}(1), 'edges'])(j-1, 2) - ...
-                varargout{i}.([fields{k}(1), 'edges'])(j-1, 1)) * ...
-                (1 - t) / 2)) / a:(varargout{i}.([fields{k}(1), ...
-                'edges'])(j-1, 1) + varargout{i}.([fields{k}(1), ...
-                'edges'])(j-1, 2)) / 2);
-            
-            % Compute upper area
-            uA = interp1(varargout{i}.(fields{k})(1,:), ...
-                varargout{i}.(fields{k})(j,:), (varargout{i}.([fields{k}(1), ...
-                'edges'])(j-1, 1) + varargout{i}.([fields{k}(1), ...
-                'edges'])(j-1, 2)) / 2:((varargout{i}.([fields{k}(1), ...
-                'edges'])(j-1, 2) - (varargout{i}.([fields{k}(1), ...
-                'edges'])(j-1, 2) - varargout{i}.([fields{k}(1), ...
-                'edges'])(j-1, 1)) * (1 - t) / 2) - ...
-                (varargout{i}.([fields{k}(1), 'edges'])(j-1, 1) + ...
-                varargout{i}.([fields{k}(1), 'edges'])(j-1, 2)) / 2) / a:...
-                varargout{i}.([fields{k}(1), 'edges'])(j-1, 2) - ...
-                (varargout{i}.([fields{k}(1), 'edges'])(j-1, 2) - ...
-                varargout{i}.([fields{k}(1), 'edges'])(j-1, 1)) * ...
-                (1 - t) / 2);
-            
-            % Store symmetry
-            varargout{i}.([fields{k}(1), 'sym'])(j-1) = ...
-                (sum(uA) - sum(lA)) / (sum(uA) + sum(lA)) * 2;
+            % Otherwise, continue flatness/symmetric calculations
+            else
+                
+                % Find maximum and minimum values within threshold region
+                dmax = max(varargout{i}.(fields{k})(j, ceil(lI + (uI - lI) ...
+                    * (1 - t) / 2):floor(uI - (uI - lI) * (1 - t) / 2)));
+                dmin = min(varargout{i}.(fields{k})(j, ceil(lI + (uI - lI) ...
+                    * (1 - t) / 2):floor(uI - (uI - lI) * (1 - t) / 2)));
+
+                % Store flatness
+                varargout{i}.([fields{k}(1), 'flat'])(j-1) = ...
+                    (dmax - dmin) / (dmax + dmin);
+
+                % Compute lower area
+                lA = interp1(varargout{i}.(fields{k})(1,:), ...
+                    varargout{i}.(fields{k})(j,:), varargout{i}.(...
+                    [fields{k}(1), 'edges'])(j-1, 1) + (varargout{i}.(...
+                    [fields{k}(1), 'edges'])(j-1, 2) - varargout{i}.(...
+                    [fields{k}(1), 'edges'])(j-1, 1)) * (1 - t)/2:((...
+                    varargout{i}.([fields{k}(1), 'edges'])(j-1, 1) + ...
+                    varargout{i}.([fields{k}(1), 'edges'])(j-1, 2))/2 - ...
+                    (varargout{i}.([fields{k}(1), 'edges'])(j-1, 1) + ...
+                    (varargout{i}.([fields{k}(1), 'edges'])(j-1, 2) - ...
+                    varargout{i}.([fields{k}(1), 'edges'])(j-1, 1)) * ...
+                    (1 - t)/2)) / a:(varargout{i}.([fields{k}(1), ...
+                    'edges'])(j-1, 1) + varargout{i}.([fields{k}(1), ...
+                    'edges'])(j-1, 2))/2);
+
+                % Compute upper area
+                uA = interp1(varargout{i}.(fields{k})(1,:), ...
+                    varargout{i}.(fields{k})(j,:), (varargout{i}.(...
+                    [fields{k}(1), 'edges'])(j-1, 1) + varargout{i}.(...
+                    [fields{k}(1), 'edges'])(j-1, 2))/2:((varargout{i}.(...
+                    [fields{k}(1), 'edges'])(j-1, 2) - (varargout{i}.(...
+                    [fields{k}(1), 'edges'])(j-1, 2) - varargout{i}.(...
+                    [fields{k}(1), 'edges'])(j-1, 1)) * (1 - t)/2) - ...
+                    (varargout{i}.([fields{k}(1), 'edges'])(j-1, 1) + ...
+                    varargout{i}.([fields{k}(1), 'edges'])(j-1, 2))/2) / a:...
+                    varargout{i}.([fields{k}(1), 'edges'])(j-1, 2) - ...
+                    (varargout{i}.([fields{k}(1), 'edges'])(j-1, 2) - ...
+                    varargout{i}.([fields{k}(1), 'edges'])(j-1, 1)) * ...
+                    (1 - t)/2);
+
+                % Store symmetry
+                varargout{i}.([fields{k}(1), 'sym'])(j-1) = ...
+                    (sum(uA) - sum(lA)) / (sum(uA) + sum(lA)) * 2;
+            end
             
             % Clear temporary variables
             clear lI uI dmax dmin lA uA;
@@ -718,7 +812,8 @@ if nargout == 2 && isfield(varargin{2}, 'abs') && isfield(varargin{2}, 'dta')
 
     % Log event
     if exist('Event', 'file') == 2
-        Event('Computing profile differences and Gamma index');
+        Event(sprintf(['Computing profile differences and %0.1f%%/%0.1fcm', ...
+            ' Gamma index'], varargin{2}.abs, varargin{2}.dta));
     end
     
     % If a local gamma variable does not exist, assume global
@@ -753,6 +848,12 @@ if nargout == 2 && isfield(varargin{2}, 'abs') && isfield(varargin{2}, 'dta')
         % Loop through each profile
         for j = 2:size(varargout{1}.(fields{k}), 1)
 
+            % Log event
+            if exist('Event', 'file') == 2
+                Event(sprintf('Computing profile %i %sgamma', j-1, ...
+                    fields{k}(1)));
+            end
+            
             % Prepare CalcGamma inputs (which uses start/width/data format)
             tar.start = varargout{1}.(fields{k})(1,1);
             tar.width = varargout{1}.(fields{k})(1,2) - tar.start;
@@ -786,8 +887,13 @@ clear j k;
     
 % Log completion
 if exist('Event', 'file') == 2
+    
+    % Log event 
     Event(sprintf(['SNC Profiler analysis successfully completed in ', ...
-      '%0.3f seconds'], toc));
+      '%0.3f seconds'], toc(timer)));
+  
+    % Clear temporary variable
+    clear timer;
 end
 
 % Catch errors, log, and rethrow
