@@ -19,6 +19,11 @@ function varargout = AnalyzeProfilerFields(varargin)
 % this function containing the same fields (and array sizes) as the first
 % results array, but containing the statistics for the reference profile.
 %
+% Finally, when correcting for ignored detectors or computing profile
+% differences or gamma (which requires uniformly spaced data), 
+% interpolation may be required.  In these instances, spline-based 
+% interpolation is used.
+%
 % The following variables are required for proper execution:
 %   varargin{1}: structure returned either by ParseSNCprm or ParseSNCtxt 
 %       (see the documentation for these functions for more information on 
@@ -30,6 +35,10 @@ function varargout = AnalyzeProfilerFields(varargin)
 %       abs (absolute gamma criterion), dta (distance to agreement, in cm),
 %       and local (flag indicating whether to perform local or global Gamma
 %       comparison).
+%   varargin{3} (optional): string indicating whether or not to normalize
+%       profiles when processing. Can be 'none', 'max', or 'center'.  If
+%       omitted, 'none' is assumed.  If reference data is not passed, this
+%       may also be passed as varargin{2} (see examples).
 %
 % The following structure fields are returned for varargout{1} and 
 % varargout{2} upon successful completion:
@@ -49,15 +58,15 @@ function varargout = AnalyzeProfilerFields(varargin)
 %       where column one is the absolute time and column two is the 
 %       differential central channel response. If time dependent data is
 %       not available (i.e. ParseSNCtxt data), this field is not returned.
-%   xfwhms: vector of X axis Full Width at Half Maximum(s) for each field
+%   xfwhm: vector of X axis Full Width at Half Maximum(s) for each field
 %   xedges: n x 2 array of left and right FWHM-defined X axis field edges
-%   yfwhms: vector of Y axis Full Width at Half Maximum(s) for each field
+%   yfwhm: vector of Y axis Full Width at Half Maximum(s) for each field
 %   yedges: n x 2 array of left and right FWHM-defined Y axis field edges
-%   pfwhms: vector of positive diagonal axis Full Width at Half Maximum(s) 
+%   pfwhm: vector of positive diagonal axis Full Width at Half Maximum(s) 
 %       for each field
 %   pedges: n x 2 array of left and right FWHM-defined positive diagonal 
 %       axis field edges
-%   nfwhms: vector of negative diagonal axis Full Width at Half Maximum(s) 
+%   nfwhm: vector of negative diagonal axis Full Width at Half Maximum(s) 
 %       for each field
 %   nedges: n x 2 array of left and right FWHM-defined negative diagonal 
 %       axis field edges
@@ -104,8 +113,8 @@ function varargout = AnalyzeProfilerFields(varargin)
 %   names = 'Head1_G90_27p3.prm';
 %   data = ParseSNCprm(path, names);
 %
-%   % Compute statistics on Profiler data
-%   results = AnalyzeProfilerFields(data);
+%   % Compute statistics on Profiler data (without normalization)
+%   results = AnalyzeProfilerFields(data, 'none');
 %
 %   % Load reference profiles from a DICOM dose file
 %   refdata = LoadProfilerDICOMReference(...
@@ -148,13 +157,14 @@ if nargin == 0 || nargin > 3
 end
 
 % Check number of input vs. output arguments
-if nargout > 1 && nargin == 1
+if (nargout > 1 && nargin == 1) || (nargout > 1 && nargin == 2 && ...
+        ~isstruct(varargin{2})) 
     if exist('Event', 'file') == 2
         Event(['Function cannot return two output arguments with only', ...
-            ' one input argument'], 'ERROR');
+            ' one data input argument'], 'ERROR');
     else
         error(['Function cannot return two output arguments with only', ...
-            ' one input argument']);
+            ' one data input argument']);
     end
     
 % Otherwise, check number of output arguments
@@ -208,6 +218,42 @@ else
     end
 end
 
+% Check for normalization input argument
+if nargin >= 2 && ischar(varargin{2})
+    
+    % Set from second input
+    norm = varargin{2};
+
+% Otherwise, if three arguments are provided
+elseif nargin == 3 && ischar(varargin{3})
+    
+    % Set from second input
+    norm = varargin{3};
+    
+% Otherwise, no normalization value was provided
+else
+    
+    % Default to none
+    norm = 'none'; 
+end
+
+% Verify normalization value
+if strcmp(norm, 'none') || strcmp(norm, 'center') || strcmp(norm, 'max')
+   
+    % Log value
+    if exist('Event', 'file') == 2
+        Event(['Normalization value set to ', norm]);
+    end
+    
+% Otherwise, throw an error    
+else    
+    if exist('Event', 'file') == 2
+        Event('Normalization input parameter is invalid', 'ERROR');
+    else
+        error('Normalization input parameter is invalid');
+    end
+end
+    
 % Execute in try/catch statement
 try
 
@@ -332,23 +378,19 @@ if strcmp(type, 'prm')
                 end
                 
                 % Interpolate each ignored detector using splines
-                for j = 1:c
-                    
-                    % Update data array
-                    varargout{1}.(fields{k})(j+1, i) = interp1(...
-                        cat(2, varargout{1}.(fields{k})(1, 1:i-1), ...
-                        varargout{1}.(fields{k})(1, i+1:end)), ...
-                        cat(2, varargout{1}.(fields{k})(j+1, 1:i-1), ...
-                        varargout{1}.(fields{k})(j+1, i+1:end)), ...
-                        varargout{1}.(fields{k})(1, i), 'spline', 'extrap');
-                end  
+                varargout{1}.(fields{k})(2:end, i) = interp1(...
+                    cat(2, varargout{1}.(fields{k})(1, 1:i-1), ...
+                    varargout{1}.(fields{k})(1, i+1:end))', ...
+                    cat(2, varargout{1}.(fields{k})(2:end, 1:i-1), ...
+                    varargout{1}.(fields{k})(2:end, i+1:end))', ...
+                    varargout{1}.(fields{k})(1, i)', 'spline', 'extrap')';
             end
         end
     end
     
     % Clear temporary variables
-    clear i j k c;
-    
+    clear i k c;
+  
     % Load time-dependent reference detector profile
     if exist('Event', 'file') == 2
         Event('Loading center detector timing profile');
@@ -381,7 +423,7 @@ elseif strcmp(type, 'ascii')
     end
     
     % Loop through the data fields
-    for k = 1:length(fields)
+    for k = 1:min(length(fields), length(varargin{1}.num))
     
         % Store data if present, converting from normalized dose to dose
         if isfield(varargin, fields{k})
@@ -396,7 +438,7 @@ elseif strcmp(type, 'ascii')
 end
     
 %% Set reference profiles (if provided)  
-if nargin >= 2
+if nargin >= 2 && isstruct(varargin{2})
 
     % Log event
     if exist('Event', 'file') == 2
@@ -408,53 +450,45 @@ if nargin >= 2
         - 1, size(varargin{2}.xdata, 1) - 1);
  
     % Loop through each field
-    for k = 1:length(fields)
+    for k = 1:min(length(fields), length(varargin{1}.num))
 
-        % Initialize empty temp variable
-        ref = zeros(size(varargin{2}.(fields{k}), 1), ...
-            size(varargout{1}.(fields{k}), 2));
-        
-        % Loop through reference profiles
-        for i = 2:size(varargin{2}.(fields{k}), 1)
-            
-            % Interpolate reference profiles to measured data using splines
-            ref(i, :) = interp1(varargin{2}.(fields{k})(1, :), ...
-                varargin{2}.(fields{k})(i, :), ...
-                varargout{1}.(fields{k})(1, :), 'spline', 'extrap');
-        end
-        
+        % Interpolate reference profiles to measured data using splines
+        ref = interp1(varargin{2}.(fields{k})(1, :)', ...
+            varargin{2}.(fields{k})(2:end, :)', ...
+            varargout{1}.(fields{k})(1, :)', 'spline', 'extrap')';
+
         % Compute correlation coefficient of normalized profiles (note 
         % corr requires n x p1 and n x p2 arrays, so profiles must be 
         % transposed when passed)
         varargout{1}.corr(k, :, :) = corr(...
             (varargout{1}.(fields{k})(2:end, :)./...
             repmat(max(varargout{1}.(fields{k})(2:end, :), [], 2), ...
-            [1, size(varargout{1}.(fields{k}), 2)]))', (ref(2:end, :)./...
-            repmat(max(ref(2:end, :), [], 2), [1, size(ref, 2)]))', 'type', ...
+            [1, size(varargout{1}.(fields{k}), 2)]))', (ref ./ ...
+            repmat(max(ref, [], 2), [1, size(ref, 2)]))', 'type', ...
             'Pearson');
     end
         
     % Clear temporary variables 
-    clear i k ref;
+    clear k ref;
     
     % Determine which reference profile has the highest correlation
     [~, varargout{1}.ref] = max(squeeze(sum(varargout{1}.corr, 1)), [], 2);    
 
     % Log event
     if exist('Event', 'file') == 2
-        Event(sprintf(['Reference profile indices = [', repmat('%s,', ...
-            [1 length(varargout{1}.ref)]), ']'], varargout{1}.ref));
+        Event(['Reference profile indices = [', strjoin(cellstr(...
+            int2str(varargout{1}.ref)), ', '), ']']);
     end
     
     % Set varargout{2} profile data (xdata, ydata, pdiag, ndiag)
     if nargout == 2
         
         % Loop through each field
-        for k = 1:length(fields)
+        for k = 1:min(length(fields), length(varargin{1}.num))
             
             % Store reference xdata based on highest correlation
-            varargout{2}.(fields{k}) = ...
-                varargin{2}.(fields{k})([1, 1 + squeeze(varargout{1}.ref)'], :);
+            varargout{2}.(fields{k}) = varargin{2}.(fields{k})([1, ...
+                1 + squeeze(varargout{1}.ref)'], :);
         end
         
         % Clear temporary variables 
@@ -462,38 +496,275 @@ if nargin >= 2
     end
 end
 
+%% Normalize data (optional)
+% If normalization is set to center
+if strcmp(norm, 'center')
+
+    % Log event
+    if exist('Event', 'file') == 2
+        Event('Normalizing profiles to center value');
+    end
+
+    % Loop through measured and reference return variables
+    for i = 1:nargout
+        
+        % Loop through the data fields
+        for k = 1:min(length(fields), length(varargin{1}.num))
+    
+            % Normalize fields by center value
+            varargout{i}.(fields{k})(2:end, :) = ...
+                varargout{i}.(fields{k})(2:end, :) ./ ...
+                repmat(interp1(varargout{i}.(fields{k})(1,:)', ...
+                varargout{i}.(fields{k})(2:end,:)', ...
+                0, 'spline')', [1 size(varargout{i}.(fields{k}),2)]);
+        end
+    end
+    
+% Otherwise, if set to max
+elseif strcmp(norm, 'max')
+
+    % Log event
+    if exist('Event', 'file') == 2
+        Event('Normalizing profiles to maximum value');
+    end
+    
+    % Loop through measured and reference return variables
+    for i = 1:nargout
+        
+        % Loop through the data fields
+        for k = 1:min(length(fields), length(varargin{1}.num))
+    
+            % Normalize fields by max value
+            varargout{i}.(fields{k})(2:end, :) = ...
+                varargout{i}.(fields{k})(2:end, :) ./ ...
+                repmat(max(varargout{i}.(fields{k})(2:end,:), [], 2), ...
+                [1 size(varargout{i}.(fields{k}),2)]);
+        end
+    end
+end
 
 %% Compute FWHM and field edges 
+if exist('Event', 'file') == 2
+    Event('Computing full width at half maximum');
+end
+
 % Loop through measured and reference return variables
 for i = 1:nargout
     
     % Loop through each field
-    for k = 1:length(fields)
+    for k = 1:min(length(fields), length(varargin{1}.num))
 
+        % Initialize edges return structure fields
+        varargout{i}.([fields{k}(1), 'edges']) = ...
+            zeros(size(varargout{i}.(fields{k}), 1) - 1, 2); %#ok<*AGROW>
+        
         % Find maximum value in profile
+        [C, I] = max(varargout{i}.(fields{k}), [], 2);
         
+        % Loop through each profile
+        for j = 2:size(varargout{i}.(fields{k}), 1)
+           
+            % Find highest lower index just below half maximum
+            lI = find(varargout{i}.(fields{k})(j, ...
+                1:I(j)) < C(j)/2, 1, 'last');
+            
+            % Interpolate to find lower half-maximum value
+            varargout{i}.([fields{k}(1), 'edges'])(j-1, 1) = ...
+                interp1(varargout{i}.(fields{k})(j, lI-1:lI+2), ...
+                varargout{i}.(fields{k})(1, lI-1:lI+2), C(j)/2, 'spline');
+            
+            % Find lowest upper index just above half maximum
+            uI = find(varargout{i}.(fields{k})(j, ...
+                I(j):end) < C(j)/2, 1, 'first');
+            
+            % Interpolate to find upper half-maximum value
+            varargout{i}.([fields{k}(1), 'edges'])(j-1, 2) = ...
+                interp1(varargout{i}.(fields{k})(j, I(j)+uI-3:I(j)+uI), ...
+                varargout{i}.(fields{k})(1, I(j)+uI-3:I(j)+uI), C(j)/2, ...
+                'spline');
+            
+            % Clear temporary variables
+            clear lI uI;
+        end
         
+        % Compute FWHM
+        varargout{i}.([fields{k}(1), 'fwhm']) = ...
+            abs(varargout{i}.([fields{k}(1), 'edges'])(:,2) - ...
+            varargout{i}.([fields{k}(1), 'edges'])(:,1));
         
+        % Clear temporary variables
+        clear C I;
     end
 end
 
 % Clear temporary variables 
-clear i k;
+clear i j k;
         
 %% Compute flatness and symmetry
+% Declare threshold for computing flatness and symmetry
+t = 0.8;
+
+% Set area interpolation factor (for computing area under field)
+a = 10000;
+
+% Log event
+if exist('Event', 'file') == 2
+    Event(sprintf('Computing central %i%% flatness and areal symmetry', ...
+        t * 100));
+end
+
+% Loop through measured and reference return variables
 for i = 1:nargout
     
-
-
-
+    % Loop through each field
+    for k = 1:min(length(fields), length(varargin{1}.num))
+        
+        % Initialize flatness and symmetry return structure fields
+        varargout{i}.([fields{k}(1), 'flat']) = ...
+            zeros(size(varargout{i}.(fields{k}), 1) - 1, 1);
+        varargout{i}.([fields{k}(1), 'sym']) = ...
+            zeros(size(varargout{i}.(fields{k}), 1) - 1, 1);
+    
+        % Find maximum value in profile
+        [C, I] = max(varargout{i}.(fields{k}), [], 2);
+    
+        % Loop through each profile
+        for j = 2:size(varargout{i}.(fields{k}), 1)
+           
+            % Find highest lower index just below half maximum
+            lI = find(varargout{i}.(fields{k})(j, ...
+                1:I(j)) < C(j)/2, 1, 'last');
+            
+            % Find lowest upper index just above half maximum
+            uI = find(varargout{i}.(fields{k})(j, ...
+                I(j):end) < C(j)/2, 1, 'first');
+            
+            % Find maximum and minimum values within threshold region
+            dmax = max(varargout{i}.(fields{k})(j, ceil(lI + (uI - lI) * ...
+                (1 - t) / 2):floor(uI - (uI - lI) * (1 - t) / 2)));
+            dmin = min(varargout{i}.(fields{k})(j, ceil(lI + (uI - lI) * ...
+                (1 - t) / 2):floor(uI - (uI - lI) * (1 - t) / 2)));
+            
+            % Store flatness
+            varargout{i}.([fields{k}(1), 'flat'])(j-1) = ...
+                (dmax - dmin) / (dmax + dmin);
+            
+            % Compute lower area
+            lA = interp1(varargout{i}.(fields{k})(1,:), ...
+                varargout{i}.(fields{k})(j,:), varargout{i}.([fields{k}(1), ...
+                'edges'])(j-1, 1) + (varargout{i}.([fields{k}(1), ...
+                'edges'])(j-1, 2) - varargout{i}.([fields{k}(1), ...
+                'edges'])(j-1, 1)) * (1 - t) / 2:...
+                ((varargout{i}.([fields{k}(1), 'edges'])(j-1, 1) + ...
+                varargout{i}.([fields{k}(1), 'edges'])(j-1, 2)) / 2 - ...
+                (varargout{i}.([fields{k}(1), 'edges'])(j-1, 1) + ...
+                (varargout{i}.([fields{k}(1), 'edges'])(j-1, 2) - ...
+                varargout{i}.([fields{k}(1), 'edges'])(j-1, 1)) * ...
+                (1 - t) / 2)) / a:(varargout{i}.([fields{k}(1), ...
+                'edges'])(j-1, 1) + varargout{i}.([fields{k}(1), ...
+                'edges'])(j-1, 2)) / 2);
+            
+            % Compute upper area
+            uA = interp1(varargout{i}.(fields{k})(1,:), ...
+                varargout{i}.(fields{k})(j,:), (varargout{i}.([fields{k}(1), ...
+                'edges'])(j-1, 1) + varargout{i}.([fields{k}(1), ...
+                'edges'])(j-1, 2)) / 2:((varargout{i}.([fields{k}(1), ...
+                'edges'])(j-1, 2) - (varargout{i}.([fields{k}(1), ...
+                'edges'])(j-1, 2) - varargout{i}.([fields{k}(1), ...
+                'edges'])(j-1, 1)) * (1 - t) / 2) - ...
+                (varargout{i}.([fields{k}(1), 'edges'])(j-1, 1) + ...
+                varargout{i}.([fields{k}(1), 'edges'])(j-1, 2)) / 2) / a:...
+                varargout{i}.([fields{k}(1), 'edges'])(j-1, 2) - ...
+                (varargout{i}.([fields{k}(1), 'edges'])(j-1, 2) - ...
+                varargout{i}.([fields{k}(1), 'edges'])(j-1, 1)) * ...
+                (1 - t) / 2);
+            
+            % Store symmetry
+            varargout{i}.([fields{k}(1), 'sym'])(j-1) = ...
+                (sum(uA) - sum(lA)) / (sum(uA) + sum(lA)) * 2;
+            
+            % Clear temporary variables
+            clear lI uI dmax dmin lA uA;
+        end
+        
+        % Clear temporary variables
+        clear C I;
+    end
 end
+
+% Clear temporary variables 
+clear i j k t a;
 
 %% Compute profile differences and Gamma (if provided)
-if nargin == 2
-    
+if nargout == 2 && isfield(varargin{2}, 'abs') && isfield(varargin{2}, 'dta')
 
+    % Log event
+    if exist('Event', 'file') == 2
+        Event('Computing profile differences and Gamma index');
+    end
     
+    % If a local gamma variable does not exist, assume global
+    if ~isfield(varargin{2}, 'local')
+        varargin{2}.local = 0;
+        
+        % Log event
+        if exist('Event', 'file') == 2
+            Event('Gamma index assumed to be global');
+        end
+    end
+    
+    % Loop through each field
+    for k = 1:min(length(fields), length(varargin{1}.num))
+    
+        % Set difference and Gamma profile positions
+        varargout{1}.([fields{k}(1), 'diff'])(1,:) = ...
+            varargout{1}.(fields{k})(1,:);      
+        varargout{1}.([fields{k}(1), 'gamma'])(1,:) = ...
+            varargout{1}.(fields{k})(1,:);
+        
+        % Resample reference profile to measured detector positions and
+        % compute difference using splines
+        varargout{1}.([fields{k}(1), 'diff'])(2:size(...
+            varargout{1}.(fields{k}), 1),:) = ...
+            varargout{1}.(fields{k})(2:size(...
+            varargout{1}.(fields{k}), 1),:) - ...
+            interp1(varargout{2}.(fields{k})(1,:)', ...
+            varargout{2}.(fields{k})(2:end,:)', ...
+            varargout{1}.(fields{k})(1,:)', 'spline', 'extrap')';
+        
+        % Loop through each profile
+        for j = 2:size(varargout{1}.(fields{k}), 1)
+
+            % Prepare CalcGamma inputs (which uses start/width/data format)
+            tar.start = varargout{1}.(fields{k})(1,1);
+            tar.width = varargout{1}.(fields{k})(1,2) - tar.start;
+            tar.data = interp1(varargout{1}.(fields{k})(1,:), ...
+                varargout{1}.(fields{k})(j,:), tar.start:tar.width:...
+                varargout{1}.(fields{k})(1,end), 'spline', 'extrap');
+
+            ref.start = varargout{2}.(fields{k})(1,1);
+            ref.width = varargout{2}.(fields{k})(1,2) - ref.start;
+            ref.data = interp1(varargout{2}.(fields{k})(1,:), ...
+                varargout{2}.(fields{k})(j,:), ref.start:ref.width:...
+                varargout{2}.(fields{k})(1,end), 'spline', 'extrap');
+            
+            % Calculate 1-D Gamma
+            gamma = CalcGamma(ref, tar, varargin{2}.abs, varargin{2}.dta, ...
+                varargin{2}.local);
+            
+            % Retrieve Gamma values for each detector position
+            varargout{1}.([fields{k}(1), 'gamma'])(j,:) = interp1(...
+                tar.start:tar.width:varargout{1}.(fields{k})(1,end), gamma, ...
+                varargout{1}.(fields{k})(1,:), 'nearest', 0);
+            
+            % Clear temporary variables
+            clear tar ref;
+        end
+    end
 end
+
+% Clear temporary variables 
+clear j k;
     
 % Log completion
 if exist('Event', 'file') == 2
