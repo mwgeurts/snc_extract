@@ -90,9 +90,9 @@ for i = 1:nargin
             Event('Generating return data frame of reference');
         end
         
-        % Store reference profile positions from resolution of first file
-        data.xdata(1,:) = meshX(1,:);
-        data.ydata(1,:) = meshY(:,1);
+        % Store sorted profile positions from resolution of first file
+        data.xdata(1,:) = sort(meshX(1,:));
+        data.ydata(1,:) = sort(meshY(:,1));
         
         % Store diagonal positions as the lerger of the x/y dimensions
         if size(data.xdata, 2) < size(data.ydata, 2)
