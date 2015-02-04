@@ -254,6 +254,24 @@ else
     end
 end
     
+% Add gamma submodule to search path
+addpath('./gamma');
+
+% Check if MATLAB can find CalcGamma
+if exist('CalcGamma', 'file') ~= 2
+    
+    % If not, throw an error
+    if exist('Event', 'file') == 2
+        Event(['The CalcGamma submodule does not exist in the search path.', ...
+            ' Use  git clone --recursive or git submodule init followed by', ...
+            ' git submodule update to fetch all submodules'], 'ERROR');
+    else
+        error(['The CalcGamma submodule does not exist in the search path.', ...
+            ' Use  git clone --recursive or git submodule init followed by', ...
+            ' git submodule update to fetch all submodules']);
+    end
+end
+
 % Execute in try/catch statement
 try
 
