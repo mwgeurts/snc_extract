@@ -15,7 +15,10 @@ ArcCHECK and IC Profiler are trademarks of Sun Nuclear Corporation.
   * [ParseSNCacm](README.md#ParseSNCacm)
   * [ParseSNCprm](README.md#ParseSNCprm)
   * [ParseSNCtxt](README.md#ParseSNCtxt)
+  * [AnalyzeProfilerFields](README.md#AnalyzeProfilerFields)
+  * [AnalyzeACFields](README.md#AnalyzeACFields)
 * [Event Calling](README.md#event-calling)
+* [Gamma Computation Methods](README.md#gamma-computation-methods)
  
 ## Installation and Use
 
@@ -244,6 +247,206 @@ end
 hold off;
 ```
 
+## AnalyzeProfilerFields
+
+`AnalyzeProfilerFields()` reads in a data structure (created via `ParseSNCprm()` or `ParseSNCtxt()`) and computes statistics for each field.  If multiple frames are detected when analyzing time-dependent ParseSNCprm data (indicated by gaps in time between measurements), each frame will be separated out and statistics will be computed independently.  The various statistics are returned as a MATLAB structure.
+
+This function may be executed with a second input argument containing one or more reference profiles for each axis (xdata, ydata, pdiag, ndiag). If provided, additional statistics (such as Gamma comparisons) will be computed. If only one reference profile is provided, but multiple measured profiles are provided, the same reference profile will be applied to each measured profile. If multiple reference profiles are provided, the closest matching reference profile to the measured frame will be selected (using a correlation coefficient).
+
+If reference data is provided, a second structure can also be returned by this function containing the same fields (and array sizes) as the first results array, but containing the statistics for the reference profile.
+
+Finally, when correcting for ignored detectors or computing profile differences or gamma (which requires uniformly spaced data), interpolation may be required.  In these instances, spline-based interpolation is used.
+
+This function has been tested with SNC Profiler version 3.3.1 and .prm version 25. 
+
+The following variables are required for proper execution:
+
+* varargin{1}: structure returned either by `ParseSNCprm()` or `ParseSNCtxt()` (see the documentation for these functions for more information on the fields contained)
+* varargin{2} (optional): structure containing reference profile data. The following structure fields can be incuded: `xdata` (2 x n+1 array), `ydata` (2 x n+1 array), `pdiag` (2 x n+1 array), and `ndiag` (2 x n+1 array). To compute Gamma, must also include the fields `abs` (absolute gamma criterion), `dta` (distance to agreement, in cm), and `local` (flag indicating whether to perform local or global Gamma comparison).
+* varargin{3} (optional): string indicating whether or not to normalize profiles when processing. Can be 'none', 'max', or 'center'.  If omitted, 'none' is assumed.  If reference data is not passed, this may also be passed as `varargin{2}` (see examples).
+
+The following structure fields are returned for `varargout{1}` and `varargout{2}` upon successful completion:
+
+* xdata: 2D array of background/ignore flag/calibration corrected X axis data, where column one is the position (in cm), and columns 2:n+1 are the dose for each frame/profile (in Gy)
+* ydata: 2D array of background/ignore flag/calibration corrected Y axis data, where column one is the position (in cm), and columns 2:n+1 are the dose for each frame/profile (in Gy)
+* pdiag: 2D array of background/ignore flag/calibration corrected positive diagonal axis data, where column one is the position (in cm), and columns 2:n+1 are the dose for each frame/profile (in Gy)
+* ndiag: 2D array of background/ignore flag/calibration corrected negative diagonal axis data, where column one is the position (in cm), and columns 2:n+1 are the dose for each frame/profile (in Gy)
+* tdata (optional): 2D array of time-dependent detector channel data, where column one is the absolute time and column two is the differential central channel response. If time dependent data is not available (i.e. ParseSNCtxt data), this field is not returned.
+* xfwhm: vector of X axis Full Width at Half Maximum(s) for each field. Note, if profile edges cannot be found for a given profile, the FWHM and edges values will be zero.
+* xedges: n x 2 array of left and right FWHM-defined X axis field edges
+* yfwhm: vector of Y axis Full Width at Half Maximum(s) for each field
+* yedges: n x 2 array of left and right FWHM-defined Y axis field edges
+* pfwhm: vector of positive diagonal axis Full Width at Half Maximum(s) for each field
+* pedges: n x 2 array of left and right FWHM-defined positive diagonal axis field edges
+* nfwhm: vector of negative diagonal axis Full Width at Half Maximum(s) for each field
+* nedges: n x 2 array of left and right FWHM-defined negative diagonal axis field edges
+* xflat: vector of central 80% flatness for X axis profiles
+* xsym: vector of areal symmetry for X axis profiles
+* yflat: vector of central 80% flatness for Y axis profiles
+* ysym: vector of areal symmetry for Y axis profiles
+* pflat: vector of central 80% flatness for positive diagonal profiles
+* psym: vector of areal symmetry for positive diagonal profiles
+* nflat: vector of central 80% flatness for negative diagonal profiles
+* nsym: vector of areal symmetry for negative diagonal profiles
+
+The following additional structure fields are returned in `varargout{1}` if reference data was provided and `nargout == 2`:
+
+* ref (optional): vector indicating which reference profile was selected
+* corr (optional): 4 x n x m 3D array containing the correlation coefficient between each of n measured profiles, m reference profiles, and axis (x, y, p, n)
+* xdiff (optional): 2D array of X axis differences, where column one is the position (in cm), and columns 2:n+1 are the abs differences
+* ydiff (optional): 2D array of Y axis differences, where column one is the position (in cm), and columns 2:n+1 are the abs differences
+* pdiff (optional): 2D array of positive diagonal differences, where column one is the position (in cm), and columns 2:n+1 are the abs differences
+* ndiff (optional): 2D array of negative diagonal differences, where column one is the position (in cm), and columns 2:n+1 are the abs differences
+* xgamma (optional): 2D array of X axis Gamma values, where column one is the position (in cm), and columns 2:n+1 are the Gamma indices
+* ygamma (optional): 2D array of Y axis Gamma values, where column one is the position (in cm), and columns 2:n+1 are the Gamma indices
+* pgamma (optional): 2D array of positive diagonal Gamma values, where column one is the position (in cm), and columns 2:n+1 are the Gamma indices
+* ngamma (optional): 2D array of negative diagonal Gamma values, where column one is the position (in cm), and columns 2:n+1 are the Gamma indices
+
+Below is an example of how this function is used:
+
+```matlab
+% Load SNC Profiler data from one file
+path = '/path/to/files/';
+name = 'Head1_27p3.prm';
+data = ParseSNCprm(path, name);
+
+% Compute statistics on Profiler data (without normalization)
+results = AnalyzeProfilerFields(data, 'none');
+
+% Load reference profiles from a DICOM dose file
+refdata = LoadProfilerDICOMReference(...
+'AP_27P3X27P3_PlaneDose_Vertical_Isocenter.dcm');
+
+% Set Gamma criteria
+refdata.abs = 2;    % percent
+refdata.dta = 0.1;  % cm
+refdata.local = 0;  % perform global analysis
+
+% Compute statistics again, this time comparing to reference criteria
+% and normalizing profiles to Profiler center
+[results, refresults] = AnalyzeProfilerFields(data, refdata, 'center');
+
+% Plot X axis Gamma index
+figure;
+subplot(2,2,1);
+hold on;
+plot(results.xdata(1,:), results.xdata(2,:));
+plot(refresults.xdata(1,:), refresults.xdata(2,:));
+plot(results.xgamma(1,:), results.xgamma(2,:));
+hold off;
+title(sprintf('xgamma (%0.1f%%/%0.1f cm)', refdata.abs, refdata.dta));
+xlabel('x axis (cm)');
+
+% Plot Y axis Gamma index
+subplot(2,2,2);
+hold on;
+plot(results.ydata(1,:), results.ydata(2,:));
+plot(refresults.ydata(1,:), refresults.ydata(2,:));
+plot(results.ygamma(1,:), results.ygamma(2,:));
+hold off;
+title(sprintf('ygamma (%0.1f%%/%0.1f cm)', refdata.abs, refdata.dta));
+xlabel('y axis (cm)');
+
+% Plot positive diagonal axis Gamma index
+subplot(2,2,3);
+hold on;
+plot(results.pdiag(1,:), results.pdiag(2,:));
+plot(refresults.pdiag(1,:), refresults.pdiag(2,:));
+plot(results.pgamma(1,:), results.pgamma(2,:));
+hold off;
+title(sprintf('pgamma (%0.1f%%/%0.1f cm)', refdata.abs, refdata.dta));
+xlabel('positive diagonal (cm)');
+
+% Plot negative diagonal axis Gamma index
+subplot(2,2,4);
+hold on;
+plot(results.ndiag(1,:), results.ndiag(2,:));
+plot(refresults.ndiag(1,:), refresults.ndiag(2,:));
+plot(results.ngamma(1,:), results.ngamma(2,:));
+hold off;
+title(sprintf('ngamma (%0.1f%%/%0.1f cm)', refdata.abs, refdata.dta));
+xlabel('negative diagonal (cm)');
+```
+
+## AnalyzeACFields
+
+`AnalyzeACFields()` reads in an ArcCHECK data structure (created via `ParseSNCacm()`), identifies individual fields, and computes the FWHM-defined center of each field (in cylindrical coordinates).   Each field detector data is interpolated to a 2D cylindrical frame. The results are returned as a MATLAB structure.
+
+This function will display a progress bar while it loads (unless MATLAB was executed with the `-nodisplay`, `-nodesktop`, or `-noFigureWindows` flags).
+
+This structure uses a cylindrical coordinate system to define ArcCHECK data, where Y is positioned along the central long axis of the ArcCHECK and theta is the angle (in degrees) from 0, where 0 is the ArcCHECK zero position (typically positioned in the positive IEC-Z direction)
+
+This function has been tested with SNC Patient version 6.2.3 and .acm file rev C. 
+
+When computing the 2D cylindrical frame, the MATLAB `scatteredInterpolant` class is used with a bilinear method.  When computing the FWHM-defined edges, splines-based interpolation is applied.
+
+The following variables are required for proper execution:
+
+* varargin{1}: structure returned either by `ParseSNCacm()` (see the documentation for this function for more information on the fields 
+contained)
+* varargin{2} (optional): number indicating the angle (in degrees) to offset the measured angles, to account for ArcCheck roll
+
+The following structure fields are returned upon successful completion:
+
+* detectors: 1386 x n array of detector data, corrected for background, relative calibration, and absolute calibration (in Gy)
+* frames: 360 x 201 x n array of n fields, where each 2D array is an
+* interpolated cylindrical map (theta x Y) of measured dose (in Gy)
+* alpha: 2 x n array of entrance and exit FWHM-defined profile center theta values (in degrees). Note, if profile edges cannot be found for a given profile, the alpha and beta values will be zero.
+* beta: 2 x n array of entrance and exit FWHM-defined profile center Y axis values (in cm)
+
+Below is an example of how this function is used:
+
+```matlab
+% Load SNC ArcCHECK data from one file
+path = '/path/to/files/';
+names = 'Head3_G270_to_G90_10deg.acm';
+data = ParseSNCacm(path, names);
+
+% Analyze ArcCHECK data
+results = AnalyzeACFields(data);
+
+% Loop through frames, plotting result
+figure;
+for i = 1:size(results.frames, 3)
+
+% Plot frame
+imagesc(circshift(results.frames(:,:,i), -180, 2));
+set(gca,'XTick', 1:30:361);
+set(gca,'XTickLabel', -180:30:180);
+xlabel('ArcCHECK Angle (deg)');
+set(gca,'YTick', 1:20:201);
+set(gca,'YTickLabel', 10:-2:-10);
+ylabel('ArcCHECK Y (cm)');
+title(sprintf('Frame %i', i));
+
+% Update plot and pause temporarily
+drawnow;
+pause(0.1);
+end
+```
+
 ## Event Calling
 
 These functions optionally return execution status and error information to an `Event()` function. If available in the MATLAB path, `Event()` will be called with one or two variables: the first variable is a string containing the status information, while the second is the status classification (WARN or ERROR). If the status information is only informative, the second argument is not included.  Finally, if no `Event()` function is available errors will still be thrown via the standard `error()` MATLAB function.
+
+## Gamma Computation Methods
+
+When comparing measured to reference profiles, a Gamma analysis is performed based on the formalism presented by D. A. Low et. al., [A technique for the quantitative evaluation of dose distributions.](http://www.ncbi.nlm.nih.gov/pubmed/9608475), Med Phys. 1998 May; 25(5): 656-61.  In this formalism, the Gamma quality index *&gamma;* is defined as follows for each point in measured dose/response volume *Rm* given the reference dose/response volume *Rc*:
+
+*&gamma; = min{&Gamma;(Rm,Rc}&forall;{Rc}*
+
+where:
+
+*&Gamma; = &radic; (r^2(Rm,Rc)/&Delta;dM^2 + &delta;^2(Rm,Rc)/&Delta;DM^2)*,
+
+*r(Rm,Rc) = | Rc - Rm |*,
+
+*&delta;(Rm,Rc) = Dc(Rc) - Dm(Rm)*,
+
+*Dc(Rc)* and *Dm(Rm)* represent the reference and measured doses at each *Rc* and *Rm*, respectively, and
+
+*&Delta;dM* and *&Delta;DM* represent the absolute and Distance To Agreement Gamma criterion (by default 3%/3mm), respectively.  
+
+The absolute criterion is typically given in percent and can refer to a percent of the maximum dose (commonly called the global method) or a percentage of the voxel *Rm* being evaluated (commonly called the local method).  The application is capable of computing gamma using either approach, and can be set in `AnalyzeProfilerFields()` by passing the input argument `varargin{2}.local` as 0 or 1.  If not provided, the global method (0) is applied.
+
+To improve computation efficiency, the computation space *&forall;{Rc}* is limited to twice the distance to agreement parameter.  Thus, the maximum "real" Gamma index returned by the application is 2.
