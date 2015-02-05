@@ -61,7 +61,9 @@ function varargout = AnalyzeProfilerFields(varargin)
 %       where column one is the absolute time and column two is the 
 %       differential central channel response. If time dependent data is
 %       not available (i.e. ParseSNCtxt data), this field is not returned.
-%   xfwhm: vector of X axis Full Width at Half Maximum(s) for each field
+%   xfwhm: vector of X axis Full Width at Half Maximum(s) for each field.
+%       Note, if profile edges cannot be found for a given profile, the 
+%       FWHM and edges values will be zero.
 %   xedges: n x 2 array of left and right FWHM-defined X axis field edges
 %   yfwhm: vector of Y axis Full Width at Half Maximum(s) for each field
 %   yedges: n x 2 array of left and right FWHM-defined Y axis field edges
@@ -192,8 +194,10 @@ function varargout = AnalyzeProfilerFields(varargin)
 % Initialize data field order array
 fields = {'xdata', 'ydata', 'pdiag', 'ndiag'};
 
-% Check the number of inputs
+% If too few or too many input arguments are provided
 if nargin == 0 || nargin > 3
+    
+    % Throw an error
     if exist('Event', 'file') == 2
         Event('Incorrect number of arguments passed to function', 'ERROR');
     else
@@ -201,9 +205,11 @@ if nargin == 0 || nargin > 3
     end
 end
 
-% Check number of input vs. output arguments
+% If an incorrect number of input vs. output arguments exist
 if (nargout > 1 && nargin == 1) || (nargout > 1 && nargin == 2 && ...
         ~isstruct(varargin{2})) 
+    
+    % Throw an error
     if exist('Event', 'file') == 2
         Event(['Function cannot return two output arguments with only', ...
             ' one data input argument'], 'ERROR');
@@ -212,8 +218,10 @@ if (nargout > 1 && nargin == 1) || (nargout > 1 && nargin == 2 && ...
             ' one data input argument']);
     end
     
-% Otherwise, check number of output arguments
+% Otherwise, if too many or too few output arguments exist
 elseif nargout == 0 || nargout > 2
+    
+    % Throw an error
     if exist('Event', 'file') == 2
         Event('Incorrect number of outputs arguments', 'ERROR');
     else
@@ -672,6 +680,7 @@ for i = 1:nargout
             
             % Otherwise, continue edge calculation
             else
+                
                 % Interpolate to find lower half-maximum value
                 varargout{i}.([fields{k}(1), 'edges'])(j-1, 1) = ...
                     interp1(varargout{i}.(fields{k})(j, lI-1:lI+2), ...
