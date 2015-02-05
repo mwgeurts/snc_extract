@@ -409,19 +409,19 @@ results = AnalyzeACFields(data);
 figure;
 for i = 1:size(results.frames, 3)
 
-% Plot frame
-imagesc(circshift(results.frames(:,:,i), -180, 2));
-set(gca,'XTick', 1:30:361);
-set(gca,'XTickLabel', -180:30:180);
-xlabel('ArcCHECK Angle (deg)');
-set(gca,'YTick', 1:20:201);
-set(gca,'YTickLabel', 10:-2:-10);
-ylabel('ArcCHECK Y (cm)');
-title(sprintf('Frame %i', i));
+    % Plot frame
+    imagesc(circshift(results.frames(:,:,i), -180, 2));
+    set(gca,'XTick', 1:30:361);
+    set(gca,'XTickLabel', -180:30:180);
+    xlabel('ArcCHECK Angle (deg)');
+    set(gca,'YTick', 1:20:201);
+    set(gca,'YTickLabel', 10:-2:-10);
+    ylabel('ArcCHECK Y (cm)');
+    title(sprintf('Frame %i', i));
 
-% Update plot and pause temporarily
-drawnow;
-pause(0.1);
+    % Update plot and pause temporarily
+    drawnow;
+    pause(0.1);
 end
 ```
 
