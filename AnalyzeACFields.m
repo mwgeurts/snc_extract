@@ -30,6 +30,8 @@ function results = AnalyzeACFields(varargin)
 % The following structure fields are returned upon successful completion:
 %   detectors: 1386 x n array of detector data, corrected for background,
 %       relative calibration, and absolute calibration (in Gy)
+%   itheta: 360 x 201 meshgrid of theta values
+%   iY: 360 x 201 meshgrid of y values
 %   frames: 360 x 201 x n array of n fields, where each 2D array is an
 %   	interpolated cylindrical map (theta x Y) of measured dose (in Gy)
 %   alpha: 2 x n array of entrance and exit FWHM-defined profile center
@@ -143,8 +145,8 @@ if usejava('jvm') && feature('ShowFigureWindows')
 end
 
 % Calculate interpolation meshgrids
-[itheta, iY] = meshgrid(0:359, -10:0.1:10);
-[~, center] = min(abs(iY(:,1)));
+[results.itheta, results.iY] = meshgrid(0:359, -10:0.1:10);
+[~, center] = min(abs(results.iY(:,1)));
 
 % Log interpolation grid settings
 if exist('Event', 'file') == 2
@@ -203,7 +205,8 @@ clear i j;
 
 %% Interpolate detectors into 2D frames
 % Initialize frames return array
-results.frames = zeros(size(itheta, 1), size(itheta, 2), c);
+results.frames = zeros(size(results.itheta, 1), ...
+    size(results.itheta, 2), c);
 
 % Log event
 if exist('Event', 'file') == 2
@@ -232,7 +235,7 @@ for i = 1:c
         results.detectors(:, i)']'), 'linear', 'linear');
 
     % Interpolate group data into 2D array of itheta, iY
-    results.frames(:, :, i) = scatter(itheta, iY);
+    results.frames(:, :, i) = scatter(results.itheta, results.iY);
     
     % Clear temporary variables 
     clear scatter;
@@ -262,7 +265,7 @@ for i = 1:c
     
     % Circshift to center maximum
     profile = circshift(profile, floor(length(profile) / 2) - I, 2);
-    theta = circshift(itheta, floor(length(profile) / 2) - I, 2);
+    theta = circshift(results.itheta, floor(length(profile) / 2) - I, 2);
     frame = squeeze(circshift(results.frames(:, :, i), ...
         floor(length(profile) / 2) - I, 2));
     if exist('Event', 'file') == 2
@@ -330,7 +333,7 @@ for i = 1:c
     [C, I] = max(long);
     if exist('Event', 'file') == 2
         Event(sprintf(['Longitudinal entrance profile maximum ', ...
-            'identified as %g at Y = %0.3f cm'], C, iY(I,1)));
+            'identified as %g at Y = %0.3f cm'], C, results.iY(I,1)));
     end
 
     % Find highest lower index just below half maximum
@@ -362,10 +365,12 @@ for i = 1:c
     else
 
         % Interpolate to find lower half-maximum value
-        l = interp1(long(lI-1:lI+2), iY(lI-1:lI+2,1), C/2, 'spline');
+        l = interp1(long(lI-1:lI+2), results.iY(lI-1:lI+2,1), C/2, ...
+            'spline');
 
         % Interpolate to find upper half-maximum value
-        u = interp1(long(I+uI-3:I+uI), iY(I+uI-3:I+uI,1), C/2, 'spline');
+        u = interp1(long(I+uI-3:I+uI), results.iY(I+uI-3:I+uI,1), C/2, ...
+            'spline');
 
         % Store field center
         results.beta(1,i) = (u+l)/2;
@@ -452,7 +457,7 @@ for i = 1:c
     [C, I] = max(long);
     if exist('Event', 'file') == 2
         Event(sprintf(['Longitudinal exit profile maximum ', ...
-            'identified as %g at Y = %0.3f cm'], C, iY(I,1)));
+            'identified as %g at Y = %0.3f cm'], C, results.iY(I,1)));
     end
 
     % Find highest lower index just below half maximum
@@ -484,10 +489,12 @@ for i = 1:c
     else
 
         % Interpolate to find lower half-maximum value
-        l = interp1(long(lI-1:lI+2), iY(lI-1:lI+2,1), C/2, 'spline');
+        l = interp1(long(lI-1:lI+2), results.iY(lI-1:lI+2,1), C/2, ...
+            'spline');
 
         % Interpolate to find upper half-maximum value
-        u = interp1(long(I+uI-3:I+uI), iY(I+uI-3:I+uI,1), C/2, 'spline');
+        u = interp1(long(I+uI-3:I+uI), results.iY(I+uI-3:I+uI,1), C/2, ...
+            'spline');
 
         % Store field center
         results.beta(2,i) = (u+l)/2;
@@ -518,7 +525,7 @@ if exist('progress', 'var') && ishandle(progress)
 end
 
 % Clear temporary variables
-clear itheta iY center c i progress rot;
+clear center c i progress rot;
 
 % Catch errors, log, and rethrow
 catch err
