@@ -5,12 +5,12 @@ function data = LoadProfilerDICOMReference(varargin)
 % are returned as a structure that is compatible with AnalyzeProfilerFields
 % (refer to the documentation in the README for more information on how
 % reference data can be used by this function).  It is also possible to
-% include an angle as the first argument to extract the profiles along
+% include an angle as the second argument to extract the profiles along
 % rotated coordinates. For example, including 90 will extract reference
 % profiles rotated by 90 degrees (for cases where the Profiler is rotated
 % relative to IEC coordinates).
 %
-% This function uses MLATAB's dicominfo and dicomread functions to extract
+% This function uses MATLAB's dicominfo and dicomread functions to extract
 % the file contents of input file.  This function assumes that the Profiler
 % is aligned with the Y axis along the DICOM Y axis and the X axis along
 % with DICOM X axis.
@@ -20,10 +20,10 @@ function data = LoadProfilerDICOMReference(varargin)
 % frame of reference of the first set provided. 
 %
 % The following variables are required for proper execution:
-%   varargin{1} (optional): number indicating the number of degrees to
+%   varargin {1}: cell array of strings containing the full path and file 
+%       name of each DICOM RT Dose file to be loaded
+%   varargin{2} (optional): number indicating the number of degrees to
 %       rotate the reference profiles
-%   varargin: cell array of strings containing the full path and file name 
-%       of each DICOM RT Dose file to be loaded.
 %
 % The following structure fields are returned upon successful completion:
 %   xdata: 2D array of X axis data, where column one is the position (in 
@@ -39,13 +39,13 @@ function data = LoadProfilerDICOMReference(varargin)
 %
 %   % Load two DICOM reference profiles
 %   refdata = LoadProfilerDICOMReference(...
-%       'AP_27P3X27P3_PlaneDose_Vertical_Isocenter.dcm', ...
-%       'AP_10P5X10P5_PlaneDose_Vertical_Isocenter.dcm');
+%       {'AP_27P3X27P3_PlaneDose_Vertical_Isocenter.dcm', ...
+%       'AP_10P5X10P5_PlaneDose_Vertical_Isocenter.dcm'});
 %
 %   % Load two DICOM reference profiles, this time rotating by 90 degrees
-%   refdata = LoadProfilerDICOMReference(90, ...
-%       'AP_27P3X27P3_PlaneDose_Vertical_Isocenter.dcm', ...
-%       'AP_10P5X10P5_PlaneDose_Vertical_Isocenter.dcm');
+%   refdata = LoadProfilerDICOMReference(...
+%       {'AP_27P3X27P3_PlaneDose_Vertical_Isocenter.dcm', ...
+%       'AP_10P5X10P5_PlaneDose_Vertical_Isocenter.dcm'}, 90);
 %
 % Author: Mark Geurts, mark.w.geurts@gmail.com
 % Copyright (C) 2015 University of Wisconsin Board of Regents
@@ -65,10 +65,7 @@ function data = LoadProfilerDICOMReference(varargin)
 
 % Execute in try/catch statement
 try
-   
-% Store nargin as variable
-n = nargin;
-    
+
 % Check the number of inputs
 if n == 0
     if exist('Event', 'file') == 2
@@ -77,7 +74,7 @@ if n == 0
         error('At least one argument must be passed to function');
     end
 end
-    
+
 % Log start
 if exist('Event', 'file') == 2
     Event('Loading SNC Profiler reference datasets');
@@ -85,29 +82,27 @@ if exist('Event', 'file') == 2
 end
 
 % Check for rotation
-if isnumeric(varargin{1})
-    
+if nargin == 2 && isnumeric(varargin{2})
+
     % Set rotation variable and index adjustor
-    rot = -varargin{1};
-    n = 1;
-    
+    rot = -varargin{2};
+
     % Log event
     if exist('Event', 'file') == 2
         Event(sprintf('Reference profiles rotated by %g deg', rot));
     end
-    
+ 
 % Otherwise do not rotate profiles
 else
     rot = 0;
-    n = 0;
 end
 
 % Initialize return variable
 data = struct;
-    
+
 % Loop through input arguments
-for i = 1+n:nargin
-    
+for i = 1:length(varargin{1})
+
     % Log file being loaded
     if exist('Event', 'file') == 2
         Event(sprintf('Loading %s', varargin{i}));
@@ -144,7 +139,6 @@ for i = 1+n:nargin
             data.pdiag(1,:) = data.xdata(1,:) * sqrt(2);
             data.ndiag(1,:) = data.xdata(1,:) * sqrt(2);
         end
-        
     end
     
     % Log file being loaded
@@ -153,13 +147,13 @@ for i = 1+n:nargin
     end
     
     % Interpolate each axis and store reference profile
-    data.xdata(i-n+1,:) = interp2(meshX, meshY, image, data.xdata(1,:) * ...
+    data.xdata(i+1,:) = interp2(meshX, meshY, image, data.xdata(1,:) * ...
         cosd(rot), data.xdata(1,:) * sind(rot), '*linear', 0);
-    data.ydata(i-n+1,:) = interp2(meshX, meshY, image, data.ydata(1,:) * ...
+    data.ydata(i+1,:) = interp2(meshX, meshY, image, data.ydata(1,:) * ...
         cosd(rot + 90), data.ydata(1,:) * sind(rot + 90), '*linear', 0);
-    data.pdiag(i-n+1,:) = interp2(meshX, meshY, image, data.pdiag(1,:) ...
+    data.pdiag(i+1,:) = interp2(meshX, meshY, image, data.pdiag(1,:) ...
         * cosd(rot + 45), data.pdiag(1,:) * sind(rot + 45), '*linear', 0);
-    data.ndiag(i-n+1,:) = interp2(meshX, meshY, image, data.ndiag(1,:) ...
+    data.ndiag(i+1,:) = interp2(meshX, meshY, image, data.ndiag(1,:) ...
         * cosd(rot - 45), data.ndiag(1,:) * sind(rot - 45), '*linear', 0);
     
     % Clear temporary variables
@@ -167,7 +161,7 @@ for i = 1+n:nargin
 end
 
 % Clear temporary variables
-clear i n rot;
+clear i rot;
 
 % Log completion
 if exist('Event', 'file') == 2

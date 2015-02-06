@@ -15,6 +15,7 @@ ArcCHECK and IC Profiler are trademarks of Sun Nuclear Corporation.
   * [ParseSNCacm](README.md#parsesncacm)
   * [ParseSNCprm](README.md#parsesncprm)
   * [ParseSNCtxt](README.md#parsesnctxt)
+  * [LoadProfilerDICOMReference](README.md#loadprofilerdicomreference)
   * [AnalyzeProfilerFields](README.md#analyzeprofilerfields)
   * [AnalyzeACFields](README.md#analyzeacfields)
 * [Event Calling](README.md#event-calling)
@@ -245,6 +246,40 @@ for i = 2:length(data.ydata)
 plot(data.ydata{1}, data.ydata{i} * data.cax(i-1));
 end
 hold off;
+```
+
+## LoadProfilerDICOMReference
+
+`LoadProfilerDICOMReference()` reads in a list of 2D DICOM RT Dose files (file names with path) and extracts profiles along the locations of the SNC Profiler axes (X, Y, and positive/negative diagonals).  The profiles are returned as a structure that is compatible with AnalyzeProfilerFields (refer to the documentation in the README for more information on how reference data can be used by this function).  It is also possible to include an angle as the second argument to extract the profiles along rotated coordinates. For example, including 90 will extract reference profiles rotated by 90 degrees (for cases where the Profiler is rotated relative to IEC coordinates).
+
+This function uses MATLAB's `dicominfo()` and `dicomread()` functions to extract the file contents of input file.  This function assumes that the Profiler is aligned with the Y axis along the DICOM Y axis and the X axis along with DICOM X axis.
+
+If the voxel sizes or start coordinates differ when loading multiple files, this function will resample all datasets to the resolution and frame of reference of the first set provided. 
+
+The following variables are required for proper execution:
+
+* varargin {1}: cell array of strings containing the full path and file name of each DICOM RT Dose file to be loaded
+* varargin{2} (optional): number indicating the number of degrees to rotate the reference profiles
+
+The following structure fields are returned upon successful completion:
+
+* xdata: 2D array of X axis data, where column one is the position (in cm), and columns 2:n+1 are the data for each input
+* ydata: 2D array of Y axis data, where column one is the position (in cm), and columns 2:n+1 are the data for each input
+* pdiag: 2D array of positive diagonal data, where column one is the position (in cm), and columns 2:n+1 are the data for each input
+* ndiag: 2D array of negative diagonal data, where column one is the position (in cm), and columns 2:n+1 are the data for each input
+
+Below is an example of how this function is used:
+
+```matlab
+% Load two DICOM reference profiles
+refdata = LoadProfilerDICOMReference({...
+    'AP_27P3X27P3_PlaneDose_Vertical_Isocenter.dcm', ...
+    'AP_10P5X10P5_PlaneDose_Vertical_Isocenter.dcm'});
+
+% Load two DICOM reference profiles, this time rotating by 90 degrees
+refdata = LoadProfilerDICOMReference({...
+    'AP_27P3X27P3_PlaneDose_Vertical_Isocenter.dcm', ...
+    'AP_10P5X10P5_PlaneDose_Vertical_Isocenter.dcm'}, 90);
 ```
 
 ## AnalyzeProfilerFields
