@@ -258,7 +258,7 @@ If the voxel sizes or start coordinates differ when loading multiple files, this
 
 The following variables are required for proper execution:
 
-* varargin {1}: cell array of strings containing the full path and file name of each DICOM RT Dose file to be loaded
+* varargin{1}: cell array of strings containing the full path and file name of each DICOM RT Dose file to be loaded
 * varargin{2} (optional): number indicating the number of degrees to rotate the reference profiles
 
 The following structure fields are returned upon successful completion:
