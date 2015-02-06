@@ -568,7 +568,13 @@ if nargin >= 2 && isstruct(varargin{2})
     clear k ref;
     
     % Determine which reference profile has the highest correlation
-    [~, varargout{1}.ref] = max(squeeze(sum(varargout{1}.corr, 1)), [], 2);    
+    if size(varargout{1}.corr, 2) == 1
+        [~, varargout{1}.ref] = ...
+            max(squeeze(sum(varargout{1}.corr, 1)), [], 1);
+    else
+        [~, varargout{1}.ref] = ...
+            max(squeeze(sum(varargout{1}.corr, 1)), [], 2);
+    end
 
     % Log event
     if exist('Event', 'file') == 2
@@ -944,11 +950,14 @@ end
 
 % Catch errors, log, and rethrow
 catch err
+    
+    % Delete progress handle if it exists
+    if exist('progress', 'var') && ishandle(progress), delete(progress); end
+    
+    % Log error
     if exist('Event', 'file') == 2
         Event(getReport(err, 'extended', 'hyperlinks', 'off'), 'ERROR');
     else
         rethrow(err);
     end
 end
-
-
