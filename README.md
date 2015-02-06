@@ -389,6 +389,8 @@ contained)
 The following structure fields are returned upon successful completion:
 
 * detectors: 1386 x n array of detector data, corrected for background, relative calibration, and absolute calibration (in Gy)
+* itheta: 360 x 201 meshgrid of theta values
+* iY: 360 x 201 meshgrid of y values
 * frames: 360 x 201 x n array of n fields, where each 2D array is an
 * interpolated cylindrical map (theta x Y) of measured dose (in Gy)
 * alpha: 2 x n array of entrance and exit FWHM-defined profile center theta values (in degrees). Note, if profile edges cannot be found for a given profile, the alpha and beta values will be zero.
