@@ -175,6 +175,7 @@ function varargout = AnalyzeProfilerFields(varargin)
 %   title(sprintf('ngamma (%0.1f%%/%0.1f cm)', refdata.abs, refdata.dta));
 %   xlabel('negative diagonal (cm)');
 %
+% Author: Mark Geurts, mark.w.geurts@gmail.com
 % Copyright (C) 2015 University of Wisconsin Board of Regents
 %
 % This program is free software: you can redistribute it and/or modify it 
