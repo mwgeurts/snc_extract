@@ -290,9 +290,15 @@ else
     % Default to none
     norm = 'none'; 
 end
-    
+
+% Determine path of current application
+[path, ~, ~] = fileparts(mfilename('fullpath'));
+
 % Add gamma submodule to search path
-addpath('./gamma');
+addpath(fullfile(path, '/gamma'));
+
+% Clear temporary variable
+clear path;
 
 % Check if MATLAB can find CalcGamma
 if exist('CalcGamma', 'file') ~= 2
