@@ -67,7 +67,7 @@ function data = LoadProfilerDICOMReference(varargin)
 try
 
 % Check the number of inputs
-if n == 0
+if nargin == 0
     if exist('Event', 'file') == 2
         Event('At least one argument must be passed to function', 'ERROR');
     else
