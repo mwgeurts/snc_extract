@@ -81,6 +81,7 @@ function data = ParseSNCprm(path, names)
 %   names = 'Head1_G90_27p3.prm';
 %   data = ParseSNCprm(path, names);
 %
+% Author: Mark Geurts, mark.w.geurts@gmail.com
 % Copyright (C) 2015 University of Wisconsin Board of Regents
 %
 % This program is free software: you can redistribute it and/or modify it 
