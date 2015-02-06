@@ -16,7 +16,7 @@ ArcCHECK and IC Profiler are trademarks of Sun Nuclear Corporation.
   * [ParseSNCprm](README.md#ParseSNCprm)
   * [ParseSNCtxt](README.md#ParseSNCtxt)
   * [AnalyzeProfilerFields](README.md#AnalyzeProfilerFields)
-  * [AnalyzeACFields](README.md#AnalyzeACFields)
+  * [AnalyzeACFields](README.md#analyzeacfields)
 * [Event Calling](README.md#event-calling)
 * [Gamma Computation Methods](README.md#gamma-computation-methods)
  
