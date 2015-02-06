@@ -109,10 +109,10 @@ for i = 1:length(varargin{1})
     end
     
     % Load DICOM data
-    info = dicominfo(varargin{i});
+    info = dicominfo(varargin{1}{i});
     width = info.PixelSpacing/10;
     start = [info.ImagePositionPatient(3); info.ImagePositionPatient(1)]/10;
-    image = single(dicomread(varargin{i})) * info.DoseGridScaling;
+    image = single(dicomread(varargin{1}{i})) * info.DoseGridScaling;
     
     % Generate mesh
     [meshX, meshY]  = meshgrid(start(2):width(2):start(2) + width(2) * ...
@@ -165,8 +165,8 @@ clear i rot;
 
 % Log completion
 if exist('Event', 'file') == 2
-    Event(sprintf(['Reference datasets successfully loaded in ', ...
-        '%0.3f seconds'], toc));
+    Event(sprintf(['%i reference datasets successfully loaded in ', ...
+        '%0.3f seconds'], length(varargin{1}), toc));
 end
 
 % Catch errors, log, and rethrow
