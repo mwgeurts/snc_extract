@@ -19,6 +19,10 @@ function varargout = AnalyzeProfilerFields(varargin)
 % this function containing the same fields (and array sizes) as the first
 % results array, but containing the statistics for the reference profile.
 %
+% This function will display a progress bar while it computes Gamma (unless 
+% MATLAB was executed with the -nodisplay, -nodesktop, or -noFigureWindows 
+% flags).
+%
 % Finally, when correcting for ignored detectors or computing profile
 % differences or gamma (which requires uniformly spaced data), 
 % interpolation may be required.  In these instances, spline-based 
@@ -829,6 +833,13 @@ clear i j k t a;
 %% Compute profile differences and Gamma (if provided)
 if nargout == 2 && isfield(varargin{2}, 'abs') && isfield(varargin{2}, 'dta')
 
+    % If a valid screen size is returned (MATLAB was run without -nodisplay)
+    if usejava('jvm') && feature('ShowFigureWindows')
+
+        % Start waitbar
+        progress = waitbar(0, 'Analyzing SNC Profiler data');
+    end
+    
     % Log event
     if exist('Event', 'file') == 2
         Event(sprintf(['Computing profile differences and %0.1f%%/%0.1fcm', ...
@@ -873,6 +884,13 @@ if nargout == 2 && isfield(varargin{2}, 'abs') && isfield(varargin{2}, 'dta')
                     fields{k}(1)));
             end
             
+            % Update waitbar
+            if exist('progress', 'var') && ishandle(progress)
+                waitbar((j*(k-1)+j)/(min(length(fields), ...
+                    length(varargin{1}.num)) * ...
+                    size(varargout{1}.(fields{k}), 1)), progress);
+            end
+            
             % Prepare CalcGamma inputs (which uses start/width/data format)
             tar.start = varargout{1}.(fields{k})(1,1);
             tar.width = varargout{1}.(fields{k})(1,2) - tar.start;
@@ -899,6 +917,14 @@ if nargout == 2 && isfield(varargin{2}, 'abs') && isfield(varargin{2}, 'dta')
             clear tar ref;
         end
     end
+    
+    % Close waitbar
+    if exist('progress', 'var') && ishandle(progress)
+        close(progress);
+    end
+
+    % Clear temporary variables
+    clear progress;
 end
 
 % Clear temporary variables 

@@ -288,7 +288,7 @@ refdata = LoadProfilerDICOMReference({...
 
 This function may be executed with a second input argument containing one or more reference profiles for each axis (xdata, ydata, pdiag, ndiag). If provided, additional statistics (such as Gamma comparisons) will be computed. If only one reference profile is provided, but multiple measured profiles are provided, the same reference profile will be applied to each measured profile. If multiple reference profiles are provided, the closest matching reference profile to the measured frame will be selected (using a correlation coefficient).
 
-If reference data is provided, a second structure can also be returned by this function containing the same fields (and array sizes) as the first results array, but containing the statistics for the reference profile.
+If reference data is provided, a second structure can also be returned by this function containing the same fields (and array sizes) as the first results array, but containing the statistics for the reference profile. This function will display a progress bar while it computes Gamma (unless MATLAB was executed with the `-nodisplay`, `-nodesktop`, or `-noFigureWindows` flags).
 
 Finally, when correcting for ignored detectors or computing profile differences or gamma (which requires uniformly spaced data), interpolation may be required.  In these instances, spline-based interpolation is used.
 
