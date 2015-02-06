@@ -105,7 +105,7 @@ for i = 1:length(varargin{1})
 
     % Log file being loaded
     if exist('Event', 'file') == 2
-        Event(sprintf('Loading %s', varargin{i}));
+        Event(sprintf('Loading %s', varargin{1}{i}));
     end
     
     % Load DICOM data
