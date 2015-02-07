@@ -257,7 +257,8 @@ if isstruct(varargin{1}) && isfield(varargin{1}, 'data') && ...
     varargin{1}.num(1:2) = varargin{1}.num(2:-1:1);
     
 % Otherwise, if the first argument contains the field 'xdata'
-elseif isstruct(varargin{1}) && isfield(varargin{1}, 'xdata')
+elseif isstruct(varargin{1}) && isfield(varargin{1}, 'xdata') && ...
+        isfield(varargin{1}, 'datatype') && isfield(varargin{1}, 'cax')
     
     % Set type to ASCII (from ParseSNCtxt)
     type = 'ascii';
@@ -518,10 +519,28 @@ elseif strcmp(type, 'ascii')
             % Increase num variable
             varargin{1}.num(k) = size(varargin{1}.(fields{k}), 1);
             
-            % Store data, converting from normalized dose to dose (Gy)
-            varargout{1}.(fields{k}) = varargin{1}.(fields{k})'/100 .* ...
-                repmat([100;varargin{1}.cax'/100], ...
-                [1 size(varargin{1}.(fields{k}), 1)]);
+            % If data type is normalized
+            if strcmp(data.datatype{1}, 'Total Dose-Normalized (%)')
+                
+                % Store data, converting from normalized dose to dose (Gy)
+                varargout{1}.(fields{k}) = varargin{1}.(fields{k})'/100 .* ...
+                    repmat([100;varargin{1}.cax'/100], ...
+                    [1 size(varargin{1}.(fields{k}), 1)]);
+            
+            % Otherwise, if data type is total dose
+            elseif isempty(regexp(data.datatype{1}, 'Total Dose', 'Once'))
+                
+                % Store data, converting from cGy to Gy
+                varargout{1}.(fields{k}) = varargin{1}.(fields{k})/100;
+            
+            % Otherwise, throw an error
+            else
+                if exist('Event', 'file') == 2
+                    Event('ASCII data type is unknown', 'ERROR');
+                else
+                    error('ASCII data type is unknown');
+                end
+            end
         else
             
             % Otherwise stop loading, as not all profile data was found

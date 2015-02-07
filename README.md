@@ -180,7 +180,7 @@ names = 'Head1_G90_27p3.prm';
 data = ParseSNCprm(path, names);
 ```
 
-### ParseSNCatxt
+### ParseSNCtxt
 
 `ParseSNCtxt()` extracts data from a SNC Profiler ASCII File Export text file and returns the data returned as a MATLAB structure. See below for a full list of the structure fields returned.  This function will display a progress bar while it loads (unless MATLAB was executed with the `-nodisplay`, `-nodesktop`, or `-noFigureWindows` flags). Where indicated, returned arrays have a length equal to the number of profiles in the text file.  If a given field is not found, this function will gracefully ingore it and the returned structure will not contain the field. If the field is found but no contents were specified, the returned field will be an empty cell array.
 
@@ -225,6 +225,7 @@ The following structure fields are returned upon successful completion:
 * dgain: array containing the gain
 * dinterval: array containing the collection interval, in ms
 * cax: array of CAX/Normalized dose values, in cGy
+* datatype: string containing the measurement data type
 * tics: array of timer tics, in microseconds
 * xdata: 2D array of X axis data, where column one is the position (in cm), and columns 2:n+1 are the data for each measurement
 * ydata: 2D array of Y axis data, where column one is the position (in cm), and columns 2:n+1 are the data for each measurement

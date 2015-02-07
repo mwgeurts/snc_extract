@@ -56,6 +56,7 @@ function data = ParseSNCtxt(path, name)
 %   dgain: array containing the gain
 %   dinterval: array containing the collection interval, in ms
 %   cax: array of CAX/Normalized dose values, in cGy
+%   datatype: string containing the measurement data type
 %   tics: array of timer tics, in microseconds
 %   xdata: 2D array of X axis data, where column one is the position (in 
 %       cm), and columns 2:n+1 are the data for each measurement
@@ -165,6 +166,7 @@ search = {
     'dgain'   'Nominal Gain'  'float'
     'dinterval'   'Collection Interval'  'float'
     'cax'   'CAX Dose'  'float'
+    'datatype'  'Measured Data:'    'string'
     'tics'   'TimerTics'  'float'
     'xdata'   'Detector ID	X Axis Position(cm)'  'array'
     'ydata'   'Detector ID	Y Axis Position(cm)'  'array'
@@ -226,7 +228,7 @@ while ~feof(fid)
                 
                 % Store results as cell array of strings
                 data.(char(search(i,1))) = regexp(tline(length(char(...
-                    search(i,2)))+2:end), '\t([^\t]+)', 'tokens');
+                    search(i,2)))+1:end), '\t{1,2}([^\t]+)', 'tokens');
                 
             % Otherwise, if returning a float
             elseif strcmp(search(i,3), 'float')
