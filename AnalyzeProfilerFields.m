@@ -520,7 +520,7 @@ elseif strcmp(type, 'ascii')
             varargin{1}.num(k) = size(varargin{1}.(fields{k}), 1);
             
             % If data type is normalized
-            if strcmp(data.datatype{1}, 'Total Dose-Normalized (%)')
+            if strcmp(varargin{1}.datatype{1}, 'Total Dose-Normalized (%)')
                 
                 % Store data, converting from normalized dose to dose (Gy)
                 varargout{1}.(fields{k}) = varargin{1}.(fields{k})'/100 .* ...
@@ -528,7 +528,8 @@ elseif strcmp(type, 'ascii')
                     [1 size(varargin{1}.(fields{k}), 1)]);
             
             % Otherwise, if data type is total dose
-            elseif isempty(regexp(data.datatype{1}, 'Total Dose', 'Once'))
+            elseif isempty(regexp(varargin{1}.datatype{1}, 'Total Dose', ...
+                    'Once'))
                 
                 % Store data, converting from cGy to Gy
                 varargout{1}.(fields{k}) = varargin{1}.(fields{k})/100;
