@@ -27,7 +27,7 @@ To install the Sun Nuclear Data Extraction Tools, copy all MATLAB .m files from 
 
 ## Compatibility and Requirements
 
-The Sun Nuclear Data Extraction Tools have been validated with SNC Patient version 6.2.3 and SNC Profiler version 3.3.1 using MATLAB versions 8.3 through 8.5 on Macintosh OSX 10.8 (Mountain Lion) through 10.10 (Yosemite).  These tools do not require any non-standard MATLAB/Java libraries or functions.
+The Sun Nuclear Data Extraction Tools have been validated with SNC Patient version 6.2.3 and SNC Profiler version 3.3.1 using MATLAB versions 8.3 through 8.5 on Macintosh OSX 10.8 (Mountain Lion) through 10.10 (Yosemite).  `AnalyzeProfilerFields()` requires the Statistics Toolbox (version 9.1 tested).
 
 All functions are compatible with both JVM and non-JVM (MATLAB was executed with the `-nodisplay`, `-nodesktop`, or `-noFigureWindows` flags) environments.  If a display is present, certain functions will display a progress bar while executing.
 
