@@ -204,6 +204,9 @@ for i = 1:length(names)
         end
     end
 
+    % Rewind to start of file
+    frewind(fid);
+
     % While the end-of-file has not been reached
     while ~feof(fid)
     
