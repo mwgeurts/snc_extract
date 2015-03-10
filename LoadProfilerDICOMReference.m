@@ -63,9 +63,6 @@ function data = LoadProfilerDICOMReference(varargin)
 % You should have received a copy of the GNU General Public License along 
 % with this program. If not, see http://www.gnu.org/licenses/.
 
-% Execute in try/catch statement
-try
-
 % Check the number of inputs
 if nargin == 0
     if exist('Event', 'file') == 2
@@ -74,6 +71,22 @@ if nargin == 0
         error('At least one argument must be passed to function');
     end
 end
+
+% Check if MATLAB can find dicomread (Image Processing Toolbox)
+if exist('dicomread', 'file') ~= 2
+    
+    % If not, throw an error
+    if exist('Event', 'file') == 2
+        Event(['The Image Processing Toolbox cannot be found and is ', ...
+            'required by this function.'], 'ERROR');
+    else
+        error(['The Image Processing Toolbox cannot be found and is ', ...
+            'required by this function.']);
+    end
+end
+
+% Execute in try/catch statement
+try
 
 % Log start
 if exist('Event', 'file') == 2

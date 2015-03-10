@@ -320,6 +320,19 @@ if exist('CalcGamma', 'file') ~= 2
     end
 end
 
+% Check if MATLAB can find corr (Statistics Toolbox)
+if exist('corr', 'file') ~= 6
+    
+    % If not, throw an error
+    if exist('Event', 'file') == 2
+        Event(['The Statistics and Machine Learning Toolbox cannot be ', ...
+            'found and is required by this function.'], 'ERROR');
+    else
+        error(['The Statistics and Machine Learning Toolbox cannot be ', ...
+            'found and is required by this function.']);
+    end
+end
+
 % Execute in try/catch statement
 try
 
