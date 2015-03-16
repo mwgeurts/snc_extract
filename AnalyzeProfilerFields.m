@@ -321,7 +321,7 @@ if exist('CalcGamma', 'file') ~= 2
 end
 
 % Check if MATLAB can find corr (Statistics Toolbox)
-if exist('corr', 'file') ~= 6 && if exist('corr', 'file') ~= 2
+if exist('corr', 'file') ~= 6 && exist('corr', 'file') ~= 2
     
     % If not, throw an error
     if exist('Event', 'file') == 2
