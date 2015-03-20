@@ -5,7 +5,7 @@ by Mark Geurts <mark.w.geurts@gmail.com>
 
 ## Description
 
-The Sun Nuclear Data Extraction Tools are a compilation of functions that extract data from [Sun Nuclear](http://www.sunnuclear.com) application and detection system exported files into MATLAB structures and arrays, including the SNC ArcCHECK&reg; and IC Profiler&#8482; systems.  These tools are used in various applications, including [viewray_mlc](https://github.com/mwgeurts/viewray_mlc), [viewray_fielduniformity](https://github.com/mwgeurts/viewray_fielduniformity), and [viewray_radiso](https://github.com/mwgeurts/viewray_radiso). ArcCHECK and IC Profiler are trademarks of Sun Nuclear Corporation. MATLAB is a registered trademark of MathWorks Inc.
+The Sun Nuclear Data Extraction Tools are a compilation of functions that extract data from [Sun Nuclear](http://www.sunnuclear.com) application and detection system exported files into MATLAB structures and arrays, including the SNC ArcCHECK&reg; and IC Profiler&#8482; systems.  ArcCHECK and IC Profiler are trademarks of Sun Nuclear Corporation. MATLAB is a registered trademark of MathWorks Inc.
 
 ## Installation
 
