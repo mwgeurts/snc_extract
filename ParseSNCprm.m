@@ -44,7 +44,7 @@ function data = ParseSNCprm(path, names)
 %   dinterval: collection interval, in ms
 %   mroom: string containing the room
 %   mtype: string containing the machine type
-%   mmodel: cstring containing the machine model
+%   mmodel: string containing the machine model
 %   mserial: string containing the machine S/N
 %   mbeamtype: string containing the beam type
 %   collimator: array of collimator values (left, right, top, bottom) in cm
@@ -65,7 +65,7 @@ function data = ParseSNCprm(path, names)
 %   gain6: array of gain ratios for amp 6
 %   us1: array (dist, mv) of ultrasonic point 1 calibration
 %   us2: array (dist, mv) of ultrasonic point 2 calibration
-%   totaltime: total time between start/stop, in msec
+%   totaltime: total time between start/stop, in sec
 %   pulsestats: array of pulse statistics (idle, mmt, idle dur, mmt dur)
 %   num: array of number of detectors (X, Y, PD, ND, Ref, Z)
 %   detspacing: detector spacing, in cm
