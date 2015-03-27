@@ -946,9 +946,9 @@ if nargout == 2 && isfield(varargin{2}, 'abs') && isfield(varargin{2}, 'dta')
                 varargout{2}.(fields{k})(j,:), ref.start:ref.width:...
                 varargout{2}.(fields{k})(1,end), 'spline', 'extrap');
             
-            % Calculate 1-D Gamma
+            % Calculate 1-D Gamma using CPU
             gamma = CalcGamma(ref, tar, varargin{2}.abs, varargin{2}.dta, ...
-                'local', varargin{2}.local);
+                'local', varargin{2}.local, 'cpu', 1);
             
             % Retrieve Gamma values for each detector position
             varargout{1}.([fields{k}(1), 'gamma'])(j,:) = interp1(...
