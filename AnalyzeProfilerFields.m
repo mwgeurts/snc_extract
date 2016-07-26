@@ -363,6 +363,14 @@ end
 % If file type is PRM, split into individual fields
 if strcmp(type, 'prm')
     
+    % If the dosecal value is 0, warn user and override to 1
+    if varargin{1}.dosecal == 0
+        if exist('Event', 'file') == 2
+            Event('Dose calibration factor is not set, ignoring', 'WARN');
+        end
+        varargin{1}.dosecal = 1;
+    end
+    
     % Log event
     if exist('Event', 'file') == 2
         Event('Initializing detector spatial positions');
