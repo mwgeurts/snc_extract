@@ -42,6 +42,7 @@ function data = ParseSNCprm(path, names)
 %   dgain: gain
 %   dmode: string containing the measurement mode
 %   dinterval: collection interval, in ms
+%   menergy: string containing beam energy
 %   mroom: string containing the room
 %   mtype: string containing the machine type
 %   mmodel: string containing the machine model
@@ -329,6 +330,12 @@ for i = 1:length(names)
                     else
                         error('Search variable type is not supported');
                     end
+                end
+                
+                % Also extract energy, if this is the beam type
+                if strcmp(search(j,2), 'Beam Type:') && ...
+                        regexp(tline, 'Energy:')
+                    data.menergy = tline(regexp(tline, 'Energy:')+8:end);
                 end
             end
         end
