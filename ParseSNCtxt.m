@@ -157,6 +157,7 @@ search = {
     'mdose'   'Dose'  'float'
     'dorientation'   'Orientation'  'string'
     'dssd'   'SSD'  'float'
+    'dbuildup'  'Buildup'  'float'
     'dcal'   'Calibration File'  'string'
     'dmodel'   'Collector Model'  'string'
     'dserial'   'Collector Serial'  'string'
