@@ -17,7 +17,7 @@ function data = ParseSNCtxt(path, name)
 % to the documentation within the source code for more information.
 %
 % The following variables are required for proper execution:
-%   path: string containing the path to the DICOM files
+%   path: string containing the path to the TXT files
 %   name: string containing the file to be loaded
 %
 % The following structure fields are returned upon successful completion:
