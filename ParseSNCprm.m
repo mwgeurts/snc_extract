@@ -22,7 +22,7 @@ function data = ParseSNCprm(path, names)
 % to the documentation within the source code for more information.
 %
 % The following variables are required for proper execution:
-%   path: string containing the path to the DICOM files
+%   path: string containing the path to the PRM files
 %   names: string or cell array of strings containing the file(s) to be 
 %       loaded
 %
