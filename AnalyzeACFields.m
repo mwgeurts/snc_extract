@@ -1,9 +1,9 @@
 function results = AnalyzeACFields(varargin)
 % AnalyzeACFields reads in an ArcCHECK data structure (created via 
-% ParseSNCacm), identifies individual fields, and computes the FWHM-defined
-% center of each field (in cylindrical coordinates).   Each field detector 
-% data is interpolated to a 2D cylindrical frame. The results are returned 
-% as a MATLAB structure.
+% ParseSNCacm), identifies individual static fields, and computes the 
+% FWHM-defined center of each field (in cylindrical coordinates). Each 
+% field detector data is interpolated to a 2D cylindrical frame. The 
+% results are returned as a MATLAB structure.
 %
 % This function will display a progress bar while it loads (unless MATLAB 
 % was executed with the -nodisplay, -nodesktop, or -noFigureWindows flags).
