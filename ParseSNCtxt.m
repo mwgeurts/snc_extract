@@ -1,4 +1,4 @@
-function data = ParseSNCtxt(path, name)
+function data = ParseSNCtxt(path, name, varargin)
 % ParseSNCtxt extracts data from a SNC Profiler ASCII File Export text file 
 % and returns the data returned as a MATLAB structure. See below for a full
 % list of the structure fields returned.  This function will display a 
@@ -19,6 +19,8 @@ function data = ParseSNCtxt(path, name)
 % The following variables are required for proper execution:
 %   path: string containing the path to the TXT files
 %   name: string containing the file to be loaded
+%   varargin{1}: optional type (if left out, the function will attempt to
+%       recognize it). Can be 'PROFILER' or 'ARCCHECK'.
 %
 % The following structure fields are returned upon successful completion:
 %   filenames: cell array of strings containing the filenames loaded
@@ -129,52 +131,6 @@ if usejava('jvm') && feature('ShowFigureWindows')
     progress = waitbar(0, 'Parsing SNC ASCII file');
 end
 
-% Declare search variables. This array specifies what lines are extracted
-% from the file, and into what format. The first column is the stored 
-% variable name, the second is the search string, and the third is the data 
-% type. Currently supported type values are string, float, datenum, and 
-% array; see while loop for specifics.
-search = {
-    'timestamp'     'TimeStamp'  'datenum'
-    'description'   'Description'  'string'
-    'institution'   'Institution'  'string'
-    'version'   'Software Version'  'string'
-    'room'   'Room'  'string'
-    'mtype'   'Machine Type'  'string'
-    'mmodel'   'Machine Model'  'string'
-    'mserial'   'Machine Serial Number'  'string'
-    'mbeamtype'   'Beam Type'  'string'
-    'menergy'   'Energy'  'string'
-    'wangle'   'Wedge Angle'  'float'
-    'wtype'   'Wedge Type'  'string'
-    'mangle'   'Gantry Angle'  'float'
-    'cangle'   'Collimator Angle'  'float'
-    'cleft'   'Collimator Left'  'float'
-    'cright'   'Collimator Right'  'float'
-    'ctop'   'Collimator Top'  'float'
-    'cbottom'   'Collimator Bottom'  'float'
-    'mrate'   'Rate'  'float'
-    'mdose'   'Dose'  'float'
-    'dorientation'   'Orientation'  'string'
-    'dssd'   'SSD'  'float'
-    'dbuildup'  'Buildup'  'float'
-    'dcal'   'Calibration File'  'string'
-    'dmodel'   'Collector Model'  'string'
-    'dserial'   'Collector Serial'  'string'
-    'drev'   'Collector Revision'  'string'
-    'dfirmware'   'Firmware Version'  'string'
-    'dmode'   'Measurement Mode'  'string'
-    'dgain'   'Nominal Gain'  'float'
-    'dinterval'   'Collection Interval'  'float'
-    'cax'   'CAX Dose'  'float'
-    'datatype'  'Measured Data:'    'string'
-    'tics'   'TimerTics'  'float'
-    'xdata'   'Detector ID	X Axis Position(cm)'  'array'
-    'ydata'   'Detector ID	Y Axis Position(cm)'  'array'
-    'pdiag'   'Detector ID	Positive Diagonal Position(cm)'  'array'
-    'ndiag'   'Detector ID	Negative Diagonal Position(cm)'  'array'
-};
-
 % Initialize return variable
 data = struct;
 
@@ -184,8 +140,9 @@ try
 % Retrieve the first line in the file
 tline = fgetl(fid);
 
-% Search for the Filename
-if strcmp(tline(1:8), 'Filename')
+% Search for the Filename (
+if (nargin >= 3 && strcmpi(varargin{1}, 'PROFILER')) || ...
+        strcmp(tline(1:8), 'Filename')
 
     % Calculate number of files loaded
     n = length(regexp(tline(9:end), '\t[^\t]+'));
@@ -195,6 +152,137 @@ if strcmp(tline(1:8), 'Filename')
 
     % Store filenames
     data.filenames = regexp(tline(9:end), '\t([^\t]+)', 'tokens');
+    
+    % Declare search variables. This array specifies what lines are extracted
+    % from the file, and into what format. The first column is the stored 
+    % variable name, the second is the search string, and the third is the data 
+    % type. Currently supported type values are string, float, datenum, and 
+    % array; see while loop for specifics.
+    search = {
+        'timestamp'     'TimeStamp'             'datenum'
+        'description'   'Description'           'string'
+        'institution'   'Institution'           'string'
+        'version'       'Software Version'      'string'
+        'room'          'Room'                  'string'
+        'mtype'         'Machine Type'          'string'
+        'mmodel'        'Machine Model'         'string'
+        'mserial'       'Machine Serial Number' 'string'
+        'mbeamtype'     'Beam Type'             'string'
+        'menergy'       'Energy'                'string'
+        'wangle'        'Wedge Angle'           'float'
+        'wtype'         'Wedge Type'            'string'
+        'mangle'        'Gantry Angle'          'float'
+        'cangle'        'Collimator Angle'      'float'
+        'cleft'         'Collimator Left'       'float'
+        'cright'        'Collimator Right'      'float'
+        'ctop'          'Collimator Top'        'float'
+        'cbottom'       'Collimator Bottom'     'float'
+        'mrate'         'Rate'                  'float'
+        'mdose'         'Dose'                  'float'
+        'dorientation'  'Orientation'           'string'
+        'dssd'          'SSD'                   'float'
+        'dbuildup'      'Buildup'               'float'
+        'dcal'          'Calibration File'      'string'
+        'dmodel'        'Collector Model'       'string'
+        'dserial'       'Collector Serial'      'string'
+        'drev'          'Collector Revision'    'string'
+        'dfirmware'     'Firmware Version'      'string'
+        'dmode'         'Measurement Mode'      'string'
+        'dgain'         'Nominal Gain'          'float'
+        'dinterval'     'Collection Interval'   'float'
+        'cax'           'CAX Dose'              'float'
+        'datatype'      'Measured Data:'        'string'
+        'tics'          'TimerTics'             'float'
+        'xdata'         'Detector ID	X Axis Position(cm)'  'array'
+        'ydata'         'Detector ID	Y Axis Position(cm)'  'array'
+        'pdiag'         'Detector ID	Positive Diagonal Position(cm)'  'array'
+        'ndiag'         'Detector ID	Negative Diagonal Position(cm)'  'array'
+    };
+
+elseif (nargin >= 3 && strcmpi(varargin{1}, 'ARCCHECK')) || ...
+        strcmp(tline(1:2), '**')
+
+    % Skip empty lines until software version
+    while ~feof(fid)
+        tline = fgetl(fid);
+        if ~isempty(tline)
+            break
+        end
+    end
+    data.version = tline;
+    
+    % Store file revision
+    fields = strsplit(fgetl(fid), ':');
+    data.filerev = strip(fields{2});
+    if ~strcmp(data.filerev, 'E')
+        if exist('Event', 'file') == 2
+            Event('File version is incompatible with this function', ...
+                'ERROR');
+        else
+            error('File version is incompatible with this function');
+        end
+    end
+    
+    % Store vendor, measurement device
+    fgetl(fid);
+    data.dvendor = strip(fgetl(fid));
+    data.dmodel = strip(fgetl(fid));
+    
+    % Pre-define number of detectors + 1 (assumes ArcCHECK)
+    n = 132;
+    
+    % Declare search variables. This array specifies what lines are extracted
+    % from the file, and into what format. The first column is the stored 
+    % variable name, the second is the search string, and the third is the data 
+    % type. Currently supported type values are string, float, datenum, and 
+    % array; see while loop for specifics.
+    search = {
+        'filename'      'FileName:'                 'string'
+        'dfirmware'     'Firmware Version:'         'string'
+        'drev'          'Hardware Revision:'        'string'
+        'dtype'         'Diode Type:'               'string'
+        'dtemp'         'Temperature:'              'float'
+        'dtilt'         'Inclinometer Tilt:'        'float'
+        'drotation'     'Inclinometer Rotation:'    'float'
+        'dthreshold'    'Background Threshold:'     'float'
+        'dplugdose'     'Measured Cavity Dose:'     'floatunits'
+        'timestamp'     'Date:'                     'dateandtime'
+        'dserial'       'Serial No:'                'string'
+        'doverrange'    'Overrange Error:'          'float'
+        'dcal'          'Cal File:'                 'string'
+        'dcalvalue'     'Dose per Count:'           'float'
+        'dcalinfo'      'Dose Info:'                'string'
+        'dcaliddc'      'Dose IDDC:'                'string'
+        'dtime'         'Time:'                     'float'
+        'dorientation'  'Orientation:'              'logical'
+        'drows'         'Rows:'                     'float'
+        'dcols'         'Cols:'                     'float'
+        'dcaxx'         'CAX X:'                    'float'
+        'dcaxy'         'CAX Y:'                    'float'
+        'dqa'           'Device Position QA:'       'float'
+        'shiftx'        'Shift X:'                  'floatunits'
+        'shifty'        'Shift Y:'                  'floatunits'
+        'shiftz'        'Shift Z:'                  'floatunits'
+        'rotx'          'Rotation X:'               'floatunits'
+        'rtoy'          'Rotation Y:'               'floatunits'
+        'rotz'          'Rotation Z:'               'floatunits' 
+        'mtype'         'Manufacturer:'             'string'
+        'menergy'       'Energy:'                   'string'
+        'dplug'         'Plug Present:'             'logical'
+        'angular'       'Applied Angular:'          'logical'
+        'fieldsize'     'Applied Field Size:'       'logical'
+        'hetero'        'Applied Heterogeneity:'    'logical' 
+        'background'    'Ycm	ROW'                'array'
+        'calfactors'    'Ycm	ROW'                'array'
+        'offset'        'Ycm	ROW'                'array'
+        'rawcounts'     'Ycm	ROW'                'array'
+        'corrcounts'    'Ycm	ROW'                'array'
+        'dosecounts'    'Ycm	ROW'                'array'
+        'flags'         'Ycm	ROW'                'array'
+        'interpolated'  'Ycm	ROW'                'array'
+        'doseinterp'    'Ycm	ROW'                'array'
+    };
+    
 else
     
     % Otherwise, file may not be in correct format
@@ -215,7 +303,8 @@ while ~feof(fid)
     for i = 1:size(search, 1)
        
         % If search variable is found
-        if length(tline) >= length(char(search(i,2)))+1 && ...
+        if ~isfield(data, char(search(i,1))) && ...
+                length(tline) >= length(char(search(i,2)))+1 && ...
                 strcmp(sprintf('%s\t', char(search(i,2))), ...
                 tline(1:length(char(search(i,2)))+1))
             
@@ -231,12 +320,39 @@ while ~feof(fid)
                 data.(char(search(i,1))) = regexp(tline(length(char(...
                     search(i,2)))+1:end), '\t{1,2}([^\t]+)', 'tokens');
                 
+            % Otherwise, if returning a logical
+            elseif strcmp(search(i,3), 'logical')
+                
+                % Temporarily store cell array
+                C = regexp(tline(length(char(search(i,2)))+2:end), ...
+                    '\t([^\t]+)', 'tokens');
+                
+                % Search alternative format
+                if isempty(C)
+                     C = regexp(tline(length(char(search(i,2)))+2:end), ...
+                        '([^,]+)', 'tokens');
+                end
+                
+                % Loop through each result, computing logical
+                for j = 1:length(C)
+                    data.(char(search(i,1)))(j) = logical(str2double(C{j}));
+                end
+                
+                % Clear temporary variables
+                clear C j;
+                
             % Otherwise, if returning a float
             elseif strcmp(search(i,3), 'float')
                 
                 % Temporarily store cell array
                 C = regexp(tline(length(char(search(i,2)))+2:end), ...
                     '\t([^\t]+)', 'tokens');
+                
+                % Search alternative format
+                if isempty(C)
+                     C = regexp(tline(length(char(search(i,2)))+2:end), ...
+                        '([^,]+)', 'tokens');
+                end
                 
                 % Loop through each result, computing double
                 for j = 1:length(C)
@@ -246,6 +362,21 @@ while ~feof(fid)
                 % Clear temporary variables
                 clear C j;
 
+            % Otherwise, if returning a float with units
+            elseif strcmp(search(i,3), 'floatunits')
+                
+                % Temporarily store cell array
+                C = regexp(tline(length(char(search(i,2)))+2:end), ...
+                        '([^\s]+)', 'tokens');
+                
+                % Store first value as double
+                if ~isempty(C)
+                    data.(char(search(i,1))) = str2double(C{1});
+                end
+                
+                % Clear temporary variables
+                clear C;
+                
             % Otherwise, if returning a datenum
             elseif strcmp(search(i,3), 'datenum')
                 
@@ -260,6 +391,19 @@ while ~feof(fid)
                 
                 % Clear temporary variables
                 clear C j;
+                
+            % Otherwise, if returning a dateandtime
+            elseif strcmp(search(i,3), 'dateandtime')
+                
+                % Temporarily store cell array
+                C = regexp(tline(length(char(search(i,2)))+1:end), ...
+                    '\t([^\t]+)', 'tokens');
+                
+                % Loop through each result, computing datenum
+                data.(char(search(i,1))) = datenum([C{1}{1}, ' ', C{3}{1}]);
+                
+                % Clear temporary variables
+                clear C;
                 
             % Otherwise, if returning an array
             elseif strcmp(search(i,3), 'array')
@@ -278,7 +422,7 @@ while ~feof(fid)
             end
             
             % End search, as a match was found
-            continue;
+            break;
         end
     end
 end
@@ -286,10 +430,18 @@ end
 % Close file handle
 fclose(fid);
 
+% Store single cell arrays as their contents
+for i = 1:size(search, 1)
+    if isfield(data, search{i,1}) && iscell(data.(search{i,1})) && ...
+            length(data.(search{i,1})) == 1
+        data.(search{i,1}) = data.(search{i,1}){1}{1};
+    end
+end
+
 % Log SNC version, if available
 if exist('Event', 'file') == 2 && isfield(data, 'version') && ...
         ~isempty(data.version)
-    Event(sprintf('SNC Profiler Version %s', char(data.version{1})));
+    Event(sprintf('SNC Version %s', char(data.version{1})));
 end
 
 % Log completion of function
@@ -300,6 +452,16 @@ end
 % Close waitbar
 if exist('progress', 'var') && ishandle(progress)
     close(progress);
+end
+
+% Clean up ArcCHECK arrays
+if isfield(data, 'dcols')
+    for i = 1:size(search, 1)
+        if isfield(data, search{i,1}) && ~ischar(data.(search{i,1})) && ...
+                size(data.(search{i,1}), 2) == data.dcols + 2
+            data.(search{i,1}) = data.(search{i,1})(:, 3:end);
+        end
+    end
 end
 
 % Clear temporary files
