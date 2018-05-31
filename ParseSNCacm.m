@@ -29,7 +29,7 @@ function data = ParseSNCacm(path, names, varargin)
 % The following structure fields are returned upon successful completion:
 %   filerev: string containing the file revision letter
 %   filename: string containing the original filename
-% 	timestamp: date and time .acm file was saved, as an integer
+% 	timestamp: date and time measurement was acquired, as an integer
 %   institution: string containing the institution
 %   dcal: string containing the calibration file name
 %   version: string containing the SNC software version
@@ -81,7 +81,7 @@ function data = ParseSNCacm(path, names, varargin)
 %   fraction = data.beamtime / data.totaltime;
 %
 % Author: Mark Geurts, mark.w.geurts@gmail.com
-% Copyright (C) 2015 University of Wisconsin Board of Regents
+% Copyright (C) 2015-2018 University of Wisconsin Board of Regents
 %
 % This program is free software: you can redistribute it and/or modify it 
 % under the terms of the GNU General Public License as published by the  

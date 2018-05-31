@@ -1,4 +1,4 @@
-function data = ParseSNCxml(path, names)
+function data = ParseSNCxml(path, names, varargin)
 % ParseSNCxml reads in SNC 3D SCANNER Water Tank XML exported data files
 % and creates a MATLAB structure of the results. The scan data is stored
 % under the structure field data.Scans{i}.Layers{j}.Readings, with columns
@@ -60,6 +60,14 @@ function data = ParseSNCxml(path, names)
 % You should have received a copy of the GNU General Public License along 
 % with this program. If not, see http://www.gnu.org/licenses/.
 
+% Define run parameter defaults
+opt.Progress = true;
+
+% Update runtime parameter arguments
+for i = 1:2:nargin-2
+    opt.(varargin{i}) = varargin{i+1};
+end
+
 % If not cell array, cast as one
 if ~iscell(names); names = cell({names}); end
 
@@ -71,7 +79,7 @@ if exist('Event', 'file') == 2
 end
 
 % If a valid screen size is returned (MATLAB was run without -nodisplay)
-if usejava('jvm') && feature('ShowFigureWindows')
+if opt.Progress && usejava('jvm') && feature('ShowFigureWindows')
     
     % Start waitbar
     progress = waitbar(0, 'Parsing SNC Water Tank file(s)');

@@ -1,14 +1,12 @@
 function data = ParseSNCtxt(path, name, varargin)
-% ParseSNCtxt extracts data from a SNC Profiler ASCII File Export text file 
-% and returns the data returned as a MATLAB structure. See below for a full
-% list of the structure fields returned.  This function will display a 
-% progress bar while it loads (unless MATLAB was executed with the 
-% -nodisplay, -nodesktop, or -noFigureWindows flags). Where indicated, 
-% returned arrays have a length equal to the number of profiles in the text 
-% file.  If a given field is not found, this function will gracefully
-% ingore it and the returned structure will not contain the field. If the
-% field is found but no contents were specified, the returned field will be
-% an empty cell array.
+% ParseSNCtxt extracts data from a SNC Profiler or ArcCheck ASCII File 
+% Export text file and returns the data returned as a MATLAB structure. 
+% See below for a full list of the structure fields returned. 
+%
+% If a given field is not found, this function will gracefully ignore it 
+% and the returned structure will not contain the field. If the field is 
+% found but no contents were specified, the returned field will be an empty 
+% cell array.
 %
 % This function has been tested with SNC Profiler version 3.3.1. Note,
 % there are additional fields in SNC ASCII text files that are not
@@ -24,7 +22,8 @@ function data = ParseSNCtxt(path, name, varargin)
 %       be 'PROFILER' or 'ARCCHECK'. Progress is a boolean, and will
 %       determine whether or not to display the progress bar.
 %
-% The following structure fields are returned upon successful completion:
+% The following structure fields are returned upon successful completion 
+% for Profiler inputs:
 %   filenames: cell array of strings containing the filenames loaded
 %   timestamp: array of date and time that the file was saved, as integers
 %   description: cell array of strings containing the description
@@ -73,6 +72,60 @@ function data = ParseSNCtxt(path, name, varargin)
 %       position (in cm), and columns 2:n+1 are the data for each 
 %       measurement
 %
+% The following structure fields are returned upon successful completion 
+% for ArcCheck inputs:
+%   filename: string containing the original saved filename
+%   dvendor: string containing the detector vendor (Sun Nuclear)
+%   dmodel: string containing the detector model
+%   dfirmware: string containing the detector firmware
+%   drev: string containing the detector revision
+%   dtype: string continaining the diode type
+%   temp: array of ArcCheck measured temperatures, in C
+%   tilt: measured inclinometer tilt, in deg
+%   rot: measured inclinometer rotation, in deg
+%   dthreshold: background threshold, in percent
+%   dplugdose: measured dose (in Gy) to central cavity, if provided
+% 	timestamp: date and time measurement was acquired, as an integer
+%   dserial: string containing the detector serial number
+%   doverrange: flag indicating whether measurement over range errors were
+%       encountered during measurement
+%   dcal: string containing calibration file
+%   dosecal: absolute reference diode dose calibration, in Gy per count
+%   dcalinfo: string containing dose calibration conditions
+%   dcaliddc: string containing calibration IDDC code
+%   totaltime: total time between start/stop, in msec
+%   dorientation: string containing the ArcCHECK orientation
+%   rows: number of rows in measurement array
+%   cols: number of columns in measurement array
+%   caxx: shift on X axis as defined by the software setting
+%   caxy: shift on Y axis as defined by the software setting
+%   dqa: for future use
+%   shiftx: phantom X shift, in mm
+%   shifty: phantom Y shift, in mm
+%   shiftz: phantom Z shift, in mm
+%   rotx: phantom X rotation, in deg
+%   roty: phantom Y rotation, in deg
+%   rotz: phantom Z rotation, in deg
+%   mtype: string containing the machine type
+%   menergy: string containing the machine energy
+%   dplug: boolean indicating whether plug was present for acquisition
+%   angular: boolean indicating whether angular correction was applied
+%   fieldsize: boolean indicating whether field size correction was applied
+%   hetero: boolean indicating whether heterogeneity correction was applied
+%   background: array of background (counts per millisecond)
+%   calfactors: array of calibration factors, normalized to CAX = 1
+%   offset: array of offset counts
+%   rawcounts: array of raw counts (total counts over the duration of the 
+%       measurement)
+%   corrcounts: array of corrected counts are derived from raw counts by 
+%       applying background subtraction, array calibration factors, and 
+%       other corrections, as applicable
+%   dosecounts: array of corrected counts mulitpied by calibration factor
+%   flags: array of bit flags for each detector, contains diagnostics and 
+%       other low-level information used by the software
+%   interpolated: array of relative interpolated data
+%   doseinterp: array of absolute dose including interpolated points
+%
 % Below is an example of how this function is used:
 %
 %   % Load SNC ASCII data
@@ -89,7 +142,7 @@ function data = ParseSNCtxt(path, name, varargin)
 %   hold off;
 %
 % Author: Mark Geurts, mark.w.geurts@gmail.com
-% Copyright (C) 2015 University of Wisconsin Board of Regents
+% Copyright (C) 2015-2018 University of Wisconsin Board of Regents
 %
 % This program is free software: you can redistribute it and/or modify it 
 % under the terms of the GNU General Public License as published by the  
@@ -252,30 +305,30 @@ elseif (isfield(opt, 'Type') && strcmpi(opt.Type, 'ARCCHECK')) || ...
         'dfirmware'     'Firmware Version:'         'string'
         'drev'          'Hardware Revision:'        'string'
         'dtype'         'Diode Type:'               'string'
-        'dtemp'         'Temperature:'              'float'
-        'dtilt'         'Inclinometer Tilt:'        'float'
-        'drotation'     'Inclinometer Rotation:'    'float'
+        'temp'          'Temperature:'              'float'
+        'tilt'          'Inclinometer Tilt:'        'float'
+        'rot'           'Inclinometer Rotation:'    'float'
         'dthreshold'    'Background Threshold:'     'float'
         'dplugdose'     'Measured Cavity Dose:'     'floatunits'
         'timestamp'     'Date:'                     'dateandtime'
         'dserial'       'Serial No:'                'string'
         'doverrange'    'Overrange Error:'          'float'
         'dcal'          'Cal File:'                 'string'
-        'dcalvalue'     'Dose per Count:'           'float'
+        'dosecal'       'Dose per Count:'           'float'
         'dcalinfo'      'Dose Info:'                'string'
         'dcaliddc'      'Dose IDDC:'                'string'
-        'dtime'         'Time:'                     'float'
+        'totaltime'     'Time:'                     'float'
         'dorientation'  'Orientation:'              'logical'
-        'drows'         'Rows:'                     'float'
-        'dcols'         'Cols:'                     'float'
-        'dcaxx'         'CAX X:'                    'float'
-        'dcaxy'         'CAX Y:'                    'float'
+        'rows'          'Rows:'                     'float'
+        'cols'          'Cols:'                     'float'
+        'caxx'          'CAX X:'                    'float'
+        'caxy'          'CAX Y:'                    'float'
         'dqa'           'Device Position QA:'       'float'
         'shiftx'        'Shift X:'                  'floatunits'
         'shifty'        'Shift Y:'                  'floatunits'
         'shiftz'        'Shift Z:'                  'floatunits'
         'rotx'          'Rotation X:'               'floatunits'
-        'rtoy'          'Rotation Y:'               'floatunits'
+        'roty'          'Rotation Y:'               'floatunits'
         'rotz'          'Rotation Z:'               'floatunits' 
         'mtype'         'Manufacturer:'             'string'
         'menergy'       'Energy:'                   'string'
@@ -466,10 +519,10 @@ if exist('progress', 'var') && ishandle(progress)
 end
 
 % Clean up ArcCHECK arrays
-if isfield(data, 'dcols')
+if isfield(data, 'cols')
     for i = 1:size(search, 1)
         if isfield(data, search{i,1}) && ~ischar(data.(search{i,1})) && ...
-                size(data.(search{i,1}), 2) == data.dcols + 2
+                size(data.(search{i,1}), 2) == data.cols + 2
             data.(search{i,1}) = data.(search{i,1})(:, 3:end);
         end
     end

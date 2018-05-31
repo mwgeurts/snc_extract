@@ -1,7 +1,7 @@
 ## Sun Nuclear Data Extraction Tools 
 
 by Mark Geurts <mark.w.geurts@gmail.com>
-<br>Copyright &copy; 2015, University of Wisconsin Board of Regents
+<br>Copyright &copy; 2015-2018, University of Wisconsin Board of Regents
 
 ## Description
 
