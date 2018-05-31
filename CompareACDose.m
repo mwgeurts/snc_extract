@@ -1,16 +1,86 @@
 function results = CompareACDose(varargin)
-% AnalyzeACDose compares measured dose from an ArcCHECK structure (either
-% using ParseSNCacm or ParseSNCtxt) to a reference dose file and computes
-% agreement statistics, including gamma pass rate using the provided Gamma
-% criteria.
-
-% folder = '~/Documents/QA Systems/ArcCHECK/Tomo Measurement Example/';
+% AnalyzeACDose compares measured dose from ArcCHECK file exports (either
+% .acm or .txt) to matching reference doses file and computes agreement 
+% statistics, including gamma pass rate using the provided Gamma criteria. 
+% The tool accepts two primary inputs; a folder containing the measurement
+% files, and a second folder containing the reference DICOM RTPLAN and
+% RTDOSE files. The tool will scan each folder, and attempt to match the
+% DICOM RT patient name/ID and plan name to the measurement file name. If a
+% match is found, the tool will run the comparison and store the results in
+% the Plans field of the returned structure.
+%
+% As part of the analysis, this function accepts a Name/Value configuration
+% option 'PlanClasses' with an n x 2 cell array of Plan class names and
+% associated case insensitive regular expressions to match to the Plan 
+% name. If provided, the function will attempt to categorize each 
+% measurement into a Plan class, then compare each Plan type. Note, each 
+% Plan is only matched to the first class that matches the regexp.
+%
+%
+% The following required and optional inputs are available:
+%   varargin{1}: file/folder/list of files containing measurement files
+%       (see ParseD4tables for information on compatible formats)
+%   varargin{2}: file/folder/list of files containing reference DICOM RT
+%       Plan and RT Dose files for each measurement file in varargin{1}
+%   varargin{3}: (optional) reserved for future use. For now pass anything.
+%   varargin{4:nargin}: Name/Value pairs of analysis sets, such as
+%       reference dose mode 'RefDose' or Gamma settings ('GammaAbs', 
+%       'GammaDTA','GammaRange'). See see below for a full list of options. 
+%       A Plan class cell array can also be provided using 'PlanClasses', 
+%       as described above.
+%
+% Upon successful completion, a structure is returned with these fields:
+%   GammaAbs: vector of absolute Gamma criteria evaluated, as a percent
+%   GammaDTA: vector of absolute Gamma criteria evaluated (together, with
+%       GammaAbs, this produces a 2D table of all permutations), in mm
+%   GammaRange: 2 element vector of the low and high percentage of the
+%       reference dose to be included in Gamma statistics
+%   GammaLimit: the number of DTAs to search when computing Gamma (for
+%       example, is GammaLimit is 2 and GammaDTA is 3, the code will search
+%       in a 6 mm radius around each measurement point)
+%   GammaRes: Gamma DTA search resolution (a value of 10 and GammaDTA of 3
+%       mm means that the code will evaluate every 0.3 mm).
+%   RefDose: a string indicating the type of reference dose. Can be
+%       'measmax' (the reference dose will be the maximum measured dose) or
+%       'Planmax' (the reference dose will be the maximum reference dose)
+%   AbsRange: 2 element vector of the low and high percentage of the
+%       reference dose to be included in absolute dose difference
+%   Plans: table with one row for each Plan matched to a dose volume
+%   
+% The following example illustrates how to use this function:
+%
+% % Define folder containing ArCHECK measurements
+% meas = '~/Documents/QA Systems/ArcCHECK/Tomo Measurement Example/';
+%
+% % Define folder containing reference dose (can be the same folder)
+% tps = '~/Documents/QA Systems/ArcCHECK/Tomo Measurement Example/';
+%
+% % Execute evaluation using default criteria
 % results = CompareACDose(folder, folder)
+%
+% % Execute evaluation, using folders above and 2%/2mm criteria
+% results = CompareACDose(meas, tps, [], 'GammaAbs', 2, 'GammaDTA', 2);
+%
+% Author: Mark Geurts, mark.w.geurts@gmail.com
+% Copyright (C) 2018 University of Wisconsin Board of Regents
+%
+% This program is free software: you can redistribute it and/or modify it 
+% under the terms of the GNU General Public License as published by the  
+% Free Software Foundation, either version 3 of the License, or (at your 
+% option) any later version.
+%
+% This program is distributed in the hope that it will be useful, but 
+% WITHOUT ANY WARRANTY; without even the implied warranty of 
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General 
+% Public License for more details.
+% 
+% You should have received a copy of the GNU General Public License along 
+% with this program. If not, see http://www.gnu.org/licenses/.
 
 % Set default options
 results.AbsRange = [50 500];
-results.GammaAbs = 1:5;
-results.GammaDTA = 1:5;
+results.GammaAbs = 3;
+results.GammaDTA = 3;
 results.GammaRange = [20 500];
 results.GammaLimit = 2;
 results.GammaRes = 10;
