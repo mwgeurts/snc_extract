@@ -22,7 +22,7 @@ function results = CompareACDose(varargin)
 %   varargin{2}: file/folder/list of files containing reference DICOM RT
 %       Plan and RT Dose files for each measurement file in varargin{1}
 %   varargin{3}: (optional) reserved for future use. For now pass anything.
-%   varargin{4:nargin}: Name/Value pairs of analysis sets, such as
+%   varargin{4:nargin}: Name/Value pairs of analysis criteria, such as
 %       reference dose mode 'RefDose' or Gamma settings ('GammaAbs', 
 %       'GammaDTA','GammaRange'). See below for a full list of options. A
 %       plan class cell array can also be provided using 'PlanClasses', 
@@ -41,7 +41,7 @@ function results = CompareACDose(varargin)
 %       mm means that the code will evaluate every 0.3 mm).
 %   RefDose: a string indicating the type of reference dose. Can be
 %       'measmax' (the reference dose will be the maximum measured dose) or
-%       'Planmax' (the reference dose will be the maximum reference dose)
+%       'planmax' (the reference dose will be the maximum reference dose)
 %   AbsRange: 2 element vector of the low and high percentage of the
 %       reference dose to be included in absolute dose difference
 %   Plans: table with one row for each Plan matched to a dose volume
@@ -55,7 +55,7 @@ function results = CompareACDose(varargin)
 % tps = '~/Documents/QA Systems/ArcCHECK/Tomo Measurement Example/';
 %
 % % Execute evaluation using default criteria
-% results = CompareACDose(folder, folder)
+% results = CompareACDose(meas, tps)
 %
 % % Execute evaluation, using folders above and 2%/2mm criteria
 % results = CompareACDose(meas, tps, [], 'GammaAbs', 2, 'GammaDTA', 2);
@@ -319,7 +319,7 @@ for i = 1:length(meas)
             switch results.RefDose
                 case 'measmax'
                     refval = max(data.measured);
-                case 'Planmax'
+                case 'planmax'
                     refval = max(max(max(dose.data)));
                 otherwise
                     refval = 0;
