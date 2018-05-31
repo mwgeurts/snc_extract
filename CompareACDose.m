@@ -300,7 +300,7 @@ for i = 1:length(meas)
         for j = 1:size(results.PlanClasses, 1)
             if ~isempty(regexpi(ref{1}{matched(1),9}, ...
                     results.PlanClasses{j,2}))
-                class = results.PlanClasses{j,2};
+                class = results.PlanClasses{j,1};
                 break;
             end
         end
