@@ -19,8 +19,10 @@ function data = ParseSNCtxt(path, name, varargin)
 % The following variables are required for proper execution:
 %   path: string containing the path to the TXT files
 %   name: string containing the file to be loaded
-%   varargin{1}: optional type (if left out, the function will attempt to
-%       recognize it). Can be 'PROFILER' or 'ARCCHECK'.
+%   varargin: optional name/value pairs 'Type' and 'Progress'. If Type is 
+%       not specifiedthe function will attempt to recognize it). Type can
+%       be 'PROFILER' or 'ARCCHECK'. Progress is a boolean, and will
+%       determine whether or not to display the progress bar.
 %
 % The following structure fields are returned upon successful completion:
 %   filenames: cell array of strings containing the filenames loaded
@@ -101,7 +103,15 @@ function data = ParseSNCtxt(path, name, varargin)
 % 
 % You should have received a copy of the GNU General Public License along 
 % with this program. If not, see http://www.gnu.org/licenses/.
- 
+
+% Define run parameter defaults
+opt.Progress = true;
+
+% Update runtime parameter arguments
+for i = 1:2:nargin-2
+    opt.(varargin{i}) = varargin{i+1};
+end
+
 % Log start of file load and start timer
 if exist('Event', 'file') == 2
     Event(['Parsing SNC ASCII file ', name]);
@@ -125,7 +135,7 @@ else
 end
 
 % If a valid screen size is returned (MATLAB was run without -nodisplay)
-if usejava('jvm') && feature('ShowFigureWindows')
+if opt.Progress && usejava('jvm') && feature('ShowFigureWindows')
     
     % Start waitbar
     progress = waitbar(0, 'Parsing SNC ASCII file');
@@ -140,8 +150,8 @@ try
 % Retrieve the first line in the file
 tline = fgetl(fid);
 
-% Search for the Filename (
-if (nargin >= 3 && strcmpi(varargin{1}, 'PROFILER')) || ...
+% Search for the Filename (suggests PROFILER)
+if (isfield(opt, 'Type') && strcmpi(opt.Type, 'PROFILER')) || ...
         strcmp(tline(1:8), 'Filename')
 
     % Calculate number of files loaded
@@ -199,7 +209,8 @@ if (nargin >= 3 && strcmpi(varargin{1}, 'PROFILER')) || ...
         'ndiag'         'Detector ID	Negative Diagonal Position(cm)'  'array'
     };
 
-elseif (nargin >= 3 && strcmpi(varargin{1}, 'ARCCHECK')) || ...
+% Otherwise, search for ** (suggests ARCCHECK)
+elseif (isfield(opt, 'Type') && strcmpi(opt.Type, 'ARCCHECK')) || ...
         strcmp(tline(1:2), '**')
 
     % Skip empty lines until software version
@@ -228,7 +239,7 @@ elseif (nargin >= 3 && strcmpi(varargin{1}, 'ARCCHECK')) || ...
     data.dvendor = strip(fgetl(fid));
     data.dmodel = strip(fgetl(fid));
     
-    % Pre-define number of detectors + 1 (assumes ArcCHECK)
+    % Pre-define number of detectors + 1 (ArcCHECK)
     n = 132;
     
     % Declare search variables. This array specifies what lines are extracted

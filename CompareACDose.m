@@ -16,7 +16,6 @@ function results = CompareACDose(varargin)
 % measurement into a Plan class, then compare each Plan type. Note, each 
 % Plan is only matched to the first class that matches the regexp.
 %
-%
 % The following required and optional inputs are available:
 %   varargin{1}: file/folder/list of files containing measurement files
 %       (see ParseD4tables for information on compatible formats)
@@ -25,8 +24,8 @@ function results = CompareACDose(varargin)
 %   varargin{3}: (optional) reserved for future use. For now pass anything.
 %   varargin{4:nargin}: Name/Value pairs of analysis sets, such as
 %       reference dose mode 'RefDose' or Gamma settings ('GammaAbs', 
-%       'GammaDTA','GammaRange'). See see below for a full list of options. 
-%       A Plan class cell array can also be provided using 'PlanClasses', 
+%       'GammaDTA','GammaRange'). See below for a full list of options. A
+%       plan class cell array can also be provided using 'PlanClasses', 
 %       as described above.
 %
 % Upon successful completion, a structure is returned with these fields:
@@ -78,6 +77,7 @@ function results = CompareACDose(varargin)
 % with this program. If not, see http://www.gnu.org/licenses/.
 
 % Set default options
+results.Progress = true;
 results.AbsRange = [50 500];
 results.GammaAbs = 3;
 results.GammaDTA = 3;
@@ -109,6 +109,12 @@ if exist('ScanDICOMPath', 'file') ~= 2
             'Use git clone --recursive or git submodule init followed by git ', ...
             'submodule update to fetch all submodules']);
     end
+end
+
+%% Scan reference dose folders for DICOM files
+% Display progress bar
+if usejava('jvm') && feature('ShowFigureWindows') && results.Progress
+    progress = waitbar(0, 'Scanning reference dataset for RT Plans');
 end
 
 % Scan first reference folder
@@ -197,6 +203,13 @@ for i = 1:length(meas)
         continue;
     end
     
+    % Update waitbar
+    if exist('progress', 'var') && ishandle(progress) && results.Progress
+        waitbar(0.2 + 0.7*i/length(meas), progress, ...
+            sprintf('Comparing ArcCheck measurement %i of %i', i, ...
+            length(meas)));
+    end
+
     % Parse file extension
     if isstruct(meas(i))
         [path, name, ext] = fileparts(fullfile(meas(i).folder, meas(i).name));
@@ -211,7 +224,7 @@ for i = 1:length(meas)
 
         % Parse .acm file
         if strcmpi(ext, '.acm')
-            m = ParseSNCacm(path, [name, ext]);
+            m = ParseSNCacm(path, [name, ext], 'Progress', false);
 
             % Compute background and calibration-corrected dose
             data = table(m.x, m.y, m.z, m.theta, ...
@@ -222,7 +235,8 @@ for i = 1:length(meas)
 
         % Parse .txt file
         elseif strcmpi(ext, '.txt')
-            m = ParseSNCtxt(path, [name, ext]);
+            m = ParseSNCtxt(path, [name, ext], 'Type', 'ARCCHECK', ...
+                'Progress', false);
 
             % Use dose counts for measured dose
             dc = flip(m.dosecounts',2);
@@ -353,6 +367,16 @@ for i = 1:length(meas)
     end
 end
     
+%% Finish up
+% Close waitbar
+if exist('progress', 'var') == 1 && ishandle(progress)
+    waitbar(1.0, progress);
+    close(progress);
+end
+
+% Remove execution flags from results
+results = rmfield(results, 'Progress');
+
 % Log completion
 if exist('Event', 'file') == 2
     Event(sprintf(['Comparison successfully completed in %0.3f seconds, ', ...
