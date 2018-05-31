@@ -1,4 +1,4 @@
-function data = ParseSNCprm(path, names)
+function data = ParseSNCprm(path, names, varargin)
 % ParseSNCprm extracts data from a SNC Profiler movie file (.prm) and
 % returns the contents of the file as a MATLAB structure.  See below for a 
 % full list of the structure fields returned.  This function will display a 
@@ -98,6 +98,14 @@ function data = ParseSNCprm(path, names)
 % You should have received a copy of the GNU General Public License along 
 % with this program. If not, see http://www.gnu.org/licenses/.
 
+% Define run parameter defaults
+opt.Progress = true;
+
+% Update runtime parameter arguments
+for i = 1:2:nargin-2
+    opt.(varargin{i}) = varargin{i+1};
+end
+
 % If not cell array, cast as one
 if ~iscell(names); names = cell({names}); end
 
@@ -108,7 +116,7 @@ if exist('Event', 'file') == 2
 end
 
 % If a valid screen size is returned (MATLAB was run without -nodisplay)
-if usejava('jvm') && feature('ShowFigureWindows')
+if opt.Progress && usejava('jvm') && feature('ShowFigureWindows')
     
     % Start waitbar
     progress = waitbar(0, 'Parsing SNC Profiler file(s)');

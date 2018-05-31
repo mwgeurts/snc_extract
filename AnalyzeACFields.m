@@ -26,6 +26,8 @@ function results = AnalyzeACFields(varargin)
 %       contained)
 %   varargin{2} (optional): number indicating the angle (in degrees) to 
 %       offset the measured angles, to account for ArcCheck roll
+%   varargin{3} (optional): boolean indicating whether or not to show
+%       progress bar
 %
 % The following structure fields are returned upon successful completion:
 %   detectors: 1386 x n array of detector data, corrected for background,
@@ -138,7 +140,8 @@ if exist('Event', 'file') == 2
 end 
 
 % If a valid screen size is returned (MATLAB was run without -nodisplay)
-if usejava('jvm') && feature('ShowFigureWindows')
+if usejava('jvm') && feature('ShowFigureWindows')  && ...
+        (nargin < 3 || varargin{3})
     
     % Start waitbar
     progress = waitbar(0, 'Analyzing SNC ArcCHECK data');

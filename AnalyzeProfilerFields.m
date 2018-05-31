@@ -46,6 +46,8 @@ function varargout = AnalyzeProfilerFields(varargin)
 %       profiles when processing. Can be 'none', 'max', or 'center'.  If
 %       omitted, 'none' is assumed.  If reference data is not passed, this
 %       may also be passed as varargin{2} (see examples).
+%   varargin{4} (optional): boolean indicating whether or not to show
+%       progress bar
 %
 % The following structure fields are returned for varargout{1} and 
 % varargout{2} upon successful completion:
@@ -883,7 +885,8 @@ clear i j k t a;
 if nargout == 2 && isfield(varargin{2}, 'abs') && isfield(varargin{2}, 'dta')
 
     % If a valid screen size is returned (MATLAB was run without -nodisplay)
-    if usejava('jvm') && feature('ShowFigureWindows')
+    if usejava('jvm') && feature('ShowFigureWindows') && ...
+            (nargin < 4 || varargin{4})
 
         % Start waitbar
         progress = waitbar(0, 'Analyzing SNC Profiler data');
