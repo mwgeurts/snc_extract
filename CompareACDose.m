@@ -265,7 +265,7 @@ for i = 1:length(meas)
     %% Match plan to reference dose files
     % Loop through each reference cell array
     for r = 1:length(ref)
-        for j = 1:length(ref{r})
+        for j = 1:size(ref{r}, 1)
         
             % Split name
             nr = strsplit(ref{r}{j,5}, ',');
