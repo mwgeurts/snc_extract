@@ -1,5 +1,5 @@
 function results = CompareACDose(varargin)
-% AnalyzeACDose compares measured dose from ArcCHECK file exports (either
+% CompareACDose compares measured dose from ArcCHECK file exports (either
 % .acm or .txt) to matching reference doses file and computes agreement 
 % statistics, including gamma pass rate using the provided Gamma criteria. 
 % The tool accepts two primary inputs; a folder containing the measurement
@@ -184,7 +184,7 @@ results.Plans.Properties.VariableUnits = horzcat(fixedUnits, u);
 
 % Clear and initialize GPU memory.  If CUDA is not enabled, or if the
 % Parallel Computing Toolbox is not installed, this will error, and the
-% function will automatically rever to CPU computation via the catch
+% function will automatically revert to CPU computation via the catch
 % statement
 try
     gpuDevice(1);
@@ -390,7 +390,7 @@ end
 
 %% Compute Gamma Table Subfunction
 function stats = gammaTable(meas, dose, refval, criteria)
-% gammaTable is called by CompareD4Dose and computes a 2D gamma table based
+% gammaTable is called by CompareACDose and computes a 2D gamma table based
 % on a provided measurement array and reference dose volume, using the
 % results GammaAbs, GammaDTA, GammaRange, GammaRes, and GammaLimit fields.
 
@@ -424,12 +424,12 @@ stats{7} = median(absDiff(meas.measured > refval * criteria.AbsRange(1)/100 & ..
     meas.measured < refval * criteria.AbsRange(2)/100));
 
 % Apply gamma range to measured values
-meas = meas(meas.measured > refval * criteria.GammaRange(1)/100 & ...
-    meas.measured < refval * criteria.GammaRange(2)/100,:);
+meas.measured = meas.measured(meas.measured > refval * criteria.GammaRange(1)/100 & ...
+    meas.measured < refval * criteria.GammaRange(2)/100);
 
 % Compute shifts (in cm)
 shifts = repmat(-criteria.GammaRes * criteria.GammaLimit:criteria.GammaRes * ...
-    criteria.GammaLimit, size(meas,1), 1) / ...
+    criteria.GammaLimit, size(meas.measured,1), 1) / ...
     criteria.GammaRes * max(criteria.GammaDTA)/10;
 
 % Compute shifted 2D arrays for each position
